@@ -1,0 +1,55 @@
+{
+  "configurations": [
+    "Debug|ARM64",
+    "Debug|Win32",
+    "Release|ARM64",
+    "Release|Win32",
+    "Debug|x64",
+    "Release|x64"
+  ],
+  "declared_properties": {
+    "ConfigurationType": [
+      "Application",
+      "DynamicLibrary"
+    ],
+    "LanguageStandard": [
+      "stdcpp17"
+    ],
+    "PlatformToolset": [
+      "v143"
+    ],
+    "WindowsTargetPlatformVersion": [
+      "10.0"
+    ]
+  },
+  "host": "Darwin",
+  "limitations": [
+    "Imports and MSBuild conditions were not evaluated.",
+    "Review draft scope against an actual selected Windows build.",
+    "No compilation database or Windows SDK flags were inferred."
+  ],
+  "manifest_draft": {
+    "inputs": [
+      "PilotCpp/DeviceInfo.h",
+      "PilotCpp/MonitorDescriptorParser.h",
+      "PilotCpp/SystemInfo.h",
+      "PilotCpp/PilotCpp.h",
+      "PilotCpp/PilotCpp.vcxproj",
+      "PilotCpp/Util.h",
+      "PilotCpp/resource.h"
+    ],
+    "schema_version": 1,
+    "translation_units": [
+      "PilotCpp/DeviceInfo.cpp",
+      "PilotCpp/SystemInfo.cpp",
+      "PilotCpp/PilotCpp.cpp",
+      "PilotCpp/Util.cpp"
+    ]
+  },
+  "project": "~/src/pilot-cpp/PilotCpp/PilotCpp.vcxproj",
+  "project_sha256": "f9e1bed94e824c87b355d66a66cfb9c7d6f395b7ba93dc499c11e02d7c28e7e9",
+  "schema_version": 1,
+  "source_root": "~/src/pilot-cpp",
+  "status": "inventory-only",
+  "unresolved_items": []
+}

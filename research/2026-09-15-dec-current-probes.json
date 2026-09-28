@@ -1,0 +1,69 @@
+{
+  "scope": "Isolated temporary synthetic sources; implementation unchanged; not Windows calibration",
+  "cases": [
+    {
+      "case": "parameter_basis_only",
+      "diagnostics_same": true,
+      "comparison": {
+        "error": "Baseline migration required: detection_fingerprint differs or is missing"
+      }
+    },
+    {
+      "case": "add_clean_translation_unit",
+      "before_units": 1,
+      "after_units": 2,
+      "comparison": {
+        "error": "Baseline migration required: detection_fingerprint differs or is missing"
+      }
+    },
+    {
+      "case": "comment_before_function",
+      "before_metrics": [
+        6
+      ],
+      "after_metrics": [
+        6
+      ],
+      "comparison": {
+        "counts": {
+          "new": 1,
+          "absent": 1,
+          "unchanged": 0,
+          "worsened": 0,
+          "improved": 0,
+          "ambiguous": 0
+        }
+      }
+    },
+    {
+      "case": "default_threshold_truncates_measurements",
+      "contract_measured_metrics": [
+        6
+      ],
+      "default_findings": 0,
+      "status": "checked"
+    },
+    {
+      "case": "root_relocation_guard_simulated",
+      "kind": "report-level input probe, not second-platform execution",
+      "comparison": {
+        "error": "Baseline migration required: source_root differs or is missing"
+      }
+    },
+    {
+      "case": "new_tu_not_in_static_manifest",
+      "database_units": 2,
+      "declared_units": 1,
+      "reported_coverage": {
+        "expected": 1,
+        "attempted": 1,
+        "checked": 1,
+        "failed": 0
+      },
+      "status": "checked",
+      "observed_files": [
+        "sample.cpp"
+      ]
+    }
+  ]
+}

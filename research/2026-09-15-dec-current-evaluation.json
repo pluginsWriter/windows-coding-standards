@@ -1,0 +1,335 @@
+{
+  "date": "2026-09-15",
+  "method": "plancheck evaluate_proposals, second call with one valid anchor per candidate",
+  "caveats": [
+    "First call rejected concatenated file anchors; that result was not used.",
+    "Evidence coverage means anchors resolved, not Windows validation.",
+    "All candidates fall below readiness threshold after risk deductions.",
+    "Weights are task-specific defaults, not user-confirmed procurement priorities."
+  ],
+  "dimensions": [
+    {
+      "id": "fit",
+      "name": "现有MSVC工程与首版落地适配",
+      "weight": 0.3,
+      "direction": "benefit",
+      "description": "（未提供说明，按维度名理解）",
+      "criteria": "5=表现最好；4=表现较好；3=表现中等；2=表现较差；1=表现最差",
+      "activation": "always"
+    },
+    {
+      "id": "reliability",
+      "name": "诊断身份与持续治理可靠性",
+      "weight": 0.3,
+      "direction": "benefit",
+      "description": "（未提供说明，按维度名理解）",
+      "criteria": "5=表现最好；4=表现较好；3=表现中等；2=表现较差；1=表现最差",
+      "activation": "always"
+    },
+    {
+      "id": "cost",
+      "name": "新增实施与维护成本",
+      "weight": 0.25,
+      "direction": "cost",
+      "description": "（未提供说明，按维度名理解）",
+      "criteria": "5=成本最高；4=成本较高；3=成本中等；2=成本较低；1=成本最低",
+      "activation": "always"
+    },
+    {
+      "id": "locality",
+      "name": "职责清晰与改动集中度",
+      "weight": 0.15,
+      "direction": "benefit",
+      "description": "（未提供说明，按维度名理解）",
+      "criteria": "5=表现最好；4=表现较好；3=表现中等；2=表现较差；1=表现最差",
+      "activation": "always"
+    }
+  ],
+  "results": [
+    {
+      "id": "harden",
+      "title": "补强现有运行器，保留窄职责",
+      "weightedScore": 69,
+      "riskPenalty": 42,
+      "totalScore": 27,
+      "recommendation": "not_recommended",
+      "evidenceCoverage": 1,
+      "dimensions": [
+        {
+          "id": "fit",
+          "name": "现有MSVC工程与首版落地适配",
+          "score": 4,
+          "rawScore": 4,
+          "unknown": false,
+          "weight": 0.3,
+          "evidence": "research/2026-09-15-dec-implementation-review.md:98",
+          "evidenceStatus": "location_verified",
+          "evidenceHash": "4ce8cbcd0c725a82b239cb813f4f50b07945fd2dc7a5b1fe86cbbb244e4a8e8c",
+          "reasoning": "事实：方案复用现有运行器及34项已通过测试，优先修复已复现缺口，补Windows捕获，并保留advisory、不自动阻断或改写用户手写内容。设计推断：沿现有代码增量补强较适合首版，评为表现较好。Windows的4TU实际扫描尚未完成，不能视为MSVC适配已验证；目标发布范围及交付期限未确认，按仍需投入适配和验收考虑，因此不给5分。"
+        },
+        {
+          "id": "reliability",
+          "name": "诊断身份与持续治理可靠性",
+          "score": 3,
+          "rawScore": 3,
+          "unknown": false,
+          "weight": 0.3,
+          "evidence": "research/2026-09-15-dec-implementation-review.md:98",
+          "evidenceStatus": "location_verified",
+          "evidenceHash": "4ce8cbcd0c725a82b239cb813f4f50b07945fd2dc7a5b1fe86cbbb244e4a8e8c",
+          "reasoning": "事实：当前存在真实复现的指纹与扫描scope缺口，方案明确优先修复并补SARIF；34项测试已通过，但Windows实际扫描和远程契约CI尚未完成。设计推断：修复方向直接对应诊断身份与比较范围的可靠性问题，但尚不能证明修复后的持续治理效果，因此评为表现中等。已知待验证项不是缺少文件证据，也不能由既有测试通过替代验收。"
+        },
+        {
+          "id": "cost",
+          "name": "新增实施与维护成本",
+          "score": 3,
+          "rawScore": 3,
+          "unknown": false,
+          "weight": 0.25,
+          "evidence": "research/2026-09-15-dec-implementation-review.md:98",
+          "evidenceStatus": "location_verified",
+          "evidenceHash": "4ce8cbcd0c725a82b239cb813f4f50b07945fd2dc7a5b1fe86cbbb244e4a8e8c",
+          "reasoning": "事实：已有代码和34项测试可复用，但仍需修复指纹和scope、补Windows捕获及SARIF，并承担报告格式升级成本。设计推断：复用降低重建成本，多项尚未完成的集成与兼容工作又使其不能归为低成本，故评为成本中等。团队熟悉度、交付期限及格式变更许可未确认，按需要额外学习、兼容处理和验收投入考虑；此分数越高表示成本越高，未作反向换算。"
+        },
+        {
+          "id": "locality",
+          "name": "职责清晰与改动集中度",
+          "score": 4,
+          "rawScore": 4,
+          "unknown": false,
+          "weight": 0.15,
+          "evidence": "research/2026-09-15-dec-implementation-review.md:98",
+          "evidenceStatus": "location_verified",
+          "evidenceHash": "4ce8cbcd0c725a82b239cb813f4f50b07945fd2dc7a5b1fe86cbbb244e4a8e8c",
+          "reasoning": "事实：候选将拟议改动限定于现有运行器、编译信息、诊断和比较职责，并明确保留窄职责与advisory。设计推断：主要工作围绕既有扫描和比较流程展开，职责边界较清晰，评为表现较好。不过这些是方案声明的落点，而非已核实的完整改动清单；Windows捕获、SARIF及格式兼容是否需要扩展到其他模块尚未确认，按存在额外联动考虑，不给5分。"
+        }
+      ],
+      "risks": [
+        {
+          "level": "high",
+          "category": "Windows落地验证",
+          "description": "4TU Windows实际扫描尚未完成，现有测试通过不能证明MSVC工程的捕获与扫描流程可交付。",
+          "evidence": "research/2026-09-15-dec-implementation-review.md:98",
+          "mitigation": "将Windows捕获、4TU扫描及结果核对设为首版验收项；验证完成前保持advisory，不宣称Windows落地已完成。",
+          "id": "risk:1",
+          "verified": true
+        },
+        {
+          "level": "high",
+          "category": "诊断身份与扫描范围",
+          "description": "已复现的指纹与scope缺口尚待修复，诊断比较和持续治理的可靠性不能仅凭既有34项测试认定。",
+          "evidence": "research/2026-09-15-dec-implementation-review.md:98",
+          "mitigation": "为复现案例补充回归测试，分别验收诊断身份稳定性和扫描范围处理，再验证比较结果。",
+          "id": "risk:2",
+          "verified": true
+        },
+        {
+          "level": "medium",
+          "category": "报告格式兼容",
+          "description": "方案包含报告格式升级，但格式变更许可和迁移细节未确认；目前没有证据证明必然破坏公开接口，因此不触发否决。",
+          "evidence": "research/2026-09-15-dec-implementation-review.md:98",
+          "mitigation": "先确认报告消费者和兼容要求，优先采用兼容性扩展；如需破坏性变更，必须先提供版本化和迁移方案。",
+          "id": "risk:3",
+          "verified": true
+        },
+        {
+          "level": "medium",
+          "category": "持续验证",
+          "description": "根目录契约CI尚未远程执行，不能将本地测试结果视为持续集成验证已完成。",
+          "evidence": "research/2026-09-15-dec-implementation-review.md:98",
+          "mitigation": "远程执行契约检查并接入回归测试，分别记录各目标环境结果，将未验证环境明确保留为交付限制。",
+          "id": "risk:4",
+          "verified": true
+        }
+      ],
+      "summary": "补强现有运行器适合作为当前首版的增量路线，复用基础较好、职责较集中，但需以指纹与scope修复、Windows实扫和报告兼容验收为交付条件，不能视为治理能力已完整验证。"
+    },
+    {
+      "id": "platform",
+      "title": "质量平台承接治理，DEC保留窄适配",
+      "weightedScore": 46,
+      "riskPenalty": 51,
+      "totalScore": 0,
+      "recommendation": "not_recommended",
+      "evidenceCoverage": 1,
+      "dimensions": [
+        {
+          "id": "fit",
+          "name": "现有MSVC工程与首版落地适配",
+          "score": 2,
+          "rawScore": 2,
+          "unknown": false,
+          "weight": 0.3,
+          "evidence": "research/2026-09-15-dec-implementation-review.md:102",
+          "evidenceStatus": "location_verified",
+          "evidenceHash": "bffe22806e131b8b0d7b9be0a688b7401e8f813d80ed9b3535ceaffafc1a1c58",
+          "reasoning": "事实：候选引用Sonar的Windows捕获能力，但本项目尚未提供平台、许可及Windows环境，4TU Windows实际扫描未完成。设计推断：平台承接治理可缩小DEC自建范围，但不能据此证明当前MSVC工程已可直接接入。按首版接入条件尚不具备的最不利情形评为表现较差；有效文件证据不等于Windows落地已验证。"
+        },
+        {
+          "id": "reliability",
+          "name": "诊断身份与持续治理可靠性",
+          "score": 2,
+          "rawScore": 2,
+          "unknown": false,
+          "weight": 0.3,
+          "evidence": "research/2026-09-15-dec-implementation-review.md:102",
+          "evidenceStatus": "location_verified",
+          "evidenceHash": "bffe22806e131b8b0d7b9be0a688b7401e8f813d80ed9b3535ceaffafc1a1c58",
+          "reasoning": "事实：候选引用多个平台各自治理能力，同时明确不能保证所有功能兼容，且手写保护不能被默认gate绕过。设计推断：外部治理具备承接方向，但各平台能力不能合并视为一个已验证方案；本项目诊断身份映射、跨次扫描一致性及手写保护与平台策略的联动尚未得到验证。现有34项测试通过不能替代平台集成验证，契约CI也未远程执行，因此当前可靠性保障评为表现较差，而非认定商业平台本身不可靠。"
+        },
+        {
+          "id": "cost",
+          "name": "新增实施与维护成本",
+          "score": 2,
+          "rawScore": 4,
+          "unknown": false,
+          "weight": 0.25,
+          "evidence": "research/2026-09-15-dec-implementation-review.md:102",
+          "evidenceStatus": "location_verified",
+          "evidenceHash": "bffe22806e131b8b0d7b9be0a688b7401e8f813d80ed9b3535ceaffafc1a1c58",
+          "reasoning": "事实：DEC保留窄适配可减少自建治理职责，但平台、许可及Windows环境均未提供，不能宣称接入免费。设计推断：首版需要承担平台选型、许可核实、环境准备、诊断适配和保护策略验证的新增工作。团队熟悉度及交付期限未知，按不能依赖现成平台环境或熟练经验的最不利情形评为成本较高；该分数表示成本高，不作反向计分，也不推定具体采购金额。"
+        },
+        {
+          "id": "locality",
+          "name": "职责清晰与改动集中度",
+          "score": 4,
+          "rawScore": 4,
+          "unknown": false,
+          "weight": 0.15,
+          "evidence": "research/2026-09-15-dec-implementation-review.md:102",
+          "evidenceStatus": "location_verified",
+          "evidenceHash": "bffe22806e131b8b0d7b9be0a688b7401e8f813d80ed9b3535ceaffafc1a1c58",
+          "reasoning": "事实：方案将治理交给质量平台、DEC保留窄适配，声明的代码改动集中在运行编排和诊断处理两个模块。设计推断：职责边界和代码改动集中度较好。但具体需求到模块的映射尚未确认，平台配置、诊断身份映射及手写保护可能形成跨边界维护工作，不能将两文件改动清单视为全部实施范围已确认，因此不评最高档。"
+        }
+      ],
+      "risks": [
+        {
+          "level": "high",
+          "category": "Windows与首版验证",
+          "description": "官方Windows捕获能力不代表本项目MSVC接入已实跑；4TU Windows实际扫描尚未完成，现有测试通过也不能覆盖这一缺口。",
+          "evidence": "research/2026-09-15-dec-implementation-review.md:102",
+          "mitigation": "先选定单个平台，完成4TU Windows捕获、扫描及诊断回传验收；验证完成前保留现有M0路径，不将平台列为首版必需依赖。",
+          "id": "risk:1",
+          "verified": true
+        },
+        {
+          "level": "high",
+          "category": "许可与平台可用性",
+          "description": "平台及许可未提供，各平台治理能力不能视为可免费组合且全部兼容；实际可用功能和持续维护投入尚不确定。",
+          "evidence": "research/2026-09-15-dec-implementation-review.md:102",
+          "mitigation": "核实具体产品、版本、许可和部署环境，逐项验证所需功能，再确定接入范围和预算。",
+          "id": "risk:2",
+          "verified": true
+        },
+        {
+          "level": "high",
+          "category": "手写保护与治理策略",
+          "description": "平台默认gate若直接成为阻断策略，可能违反保持用户手写、不自动阻断或改写的要求；目前没有证据表明方案要求这种违规行为，因此不据此触发否决。",
+          "evidence": "research/2026-09-15-dec-implementation-review.md:102",
+          "mitigation": "首版仅回传诊断与治理信息，禁用自动阻断和自动改写，并以集成测试验证平台默认策略无法绕过手写保护。",
+          "id": "risk:3",
+          "verified": true
+        },
+        {
+          "level": "medium",
+          "category": "诊断身份与接口边界",
+          "description": "窄适配的职责划分较清晰，但本项目跨平台诊断身份一致性与既有输出兼容性尚未验证，不能仅凭平台治理能力认定已解决。",
+          "evidence": "research/2026-09-15-dec-implementation-review.md:102",
+          "mitigation": "保持已有公开输出不变，将平台映射封装为可选适配，验证重复扫描、路径变化和规则标识映射；如确需变更接口，先提供迁移方案。",
+          "id": "risk:4",
+          "verified": true
+        }
+      ],
+      "summary": "平台承接治理有利于职责清晰和减少DEC自建范围，但当前平台、许可与Windows实跑条件未落实，新增成本较高，更适合作为验证后的可选后续路线，而非当前首版默认依赖。"
+    },
+    {
+      "id": "full",
+      "title": "完整自研DEC治理系统",
+      "weightedScore": 35,
+      "riskPenalty": 36,
+      "totalScore": 0,
+      "recommendation": "not_recommended",
+      "evidenceCoverage": 1,
+      "dimensions": [
+        {
+          "id": "fit",
+          "name": "现有MSVC工程与首版落地适配",
+          "score": 2,
+          "rawScore": 2,
+          "unknown": false,
+          "weight": 0.3,
+          "evidence": "research/2026-09-15-dec-implementation-review.md:106",
+          "evidenceStatus": "location_verified",
+          "evidenceHash": "8d9f9f827e142a71e8df4f781dc11c7a05edb332a668999abe67c4bb4185d91b",
+          "reasoning": "事实：路线包含47项后续任务，4TU Windows真实工程扫描尚未跑通。设计推断：在现有M0之上同时建设完整治理系统，扩大了首版交付范围，尚不能证明与现有MSVC工程适配良好，属表现较差。Windows适配属于已知待验证项，不等于没有文件证据；具体改动落点、团队熟悉度和交付期限未确认，按不利情形考虑，不假设可以快速落地。"
+        },
+        {
+          "id": "reliability",
+          "name": "诊断身份与持续治理可靠性",
+          "score": 2,
+          "rawScore": 2,
+          "unknown": false,
+          "weight": 0.3,
+          "evidence": "research/2026-09-15-dec-implementation-review.md:106",
+          "evidenceStatus": "location_verified",
+          "evidenceHash": "8d9f9f827e142a71e8df4f781dc11c7a05edb332a668999abe67c4bb4185d91b",
+          "reasoning": "事实：现状34项测试通过，但持久基线、来源、SLA、策略和授权尚无实现及长期收益证据，4TU Windows实际扫描未完成，契约CI也未远程执行。设计推断：已有测试提供有限基础保障，但不足以证明诊断身份的持续稳定性和治理闭环可靠性，因此评为表现较差，而非因规划完整给予高分。Windows及长期运行验证仍待完成，不将其误判为锚点缺失，也不认定商业治理能力已实跑。"
+        },
+        {
+          "id": "cost",
+          "name": "新增实施与维护成本",
+          "score": 1,
+          "rawScore": 5,
+          "unknown": false,
+          "weight": 0.25,
+          "evidence": "research/2026-09-15-dec-implementation-review.md:106",
+          "evidenceStatus": "location_verified",
+          "evidenceHash": "8d9f9f827e142a71e8df4f781dc11c7a05edb332a668999abe67c4bb4185d91b",
+          "reasoning": "事实：该路线要求以47项任务后续自建持久基线、来源、SLA、策略和授权，目前尚无这些实现。设计推断：新增成本不仅包括功能开发，还包括跨功能契约、状态维护、回归验证及长期治理维护，按成本最高档计分；此分数表示昂贵，不作反向换算。团队熟悉度、交付期限及数据接口可变更范围未确认，按不利情形考虑，不预设复用收益或维护成本下降；许可项未获确认，不假设存在已验证的许可优势。"
+        },
+        {
+          "id": "locality",
+          "name": "职责清晰与改动集中度",
+          "score": 2,
+          "rawScore": 2,
+          "unknown": false,
+          "weight": 0.15,
+          "evidence": "research/2026-09-15-dec-implementation-review.md:106",
+          "evidenceStatus": "location_verified",
+          "evidenceHash": "8d9f9f827e142a71e8df4f781dc11c7a05edb332a668999abe67c4bb4185d91b",
+          "reasoning": "事实：计划新增的职责横跨持久状态、来源追踪、SLA、策略和授权，而申报改动仅涉及runner与comparison两个模块，具体需求到模块的映射尚未确认。设计推断：文件数量少不能直接证明职责清晰；若集中承载上述治理职责，存在明显耦合风险，若拆分则实际改动范围会扩大。按未确认模块边界的不利情形评为表现较差，但不把这种设计风险说成已经发生的代码缺陷。"
+        }
+      ],
+      "risks": [
+        {
+          "level": "high",
+          "category": "首版范围与交付",
+          "description": "在真实MSVC工程扫描尚未完成验证时推进47项完整治理任务，可能使首版交付被尚未实现的治理能力拖延。",
+          "evidence": "research/2026-09-15-dec-implementation-review.md:106",
+          "mitigation": "先完成4TU Windows实际扫描和现有M0验收，将完整治理任务拆为后续独立里程碑。",
+          "id": "risk:1",
+          "verified": true
+        },
+        {
+          "level": "high",
+          "category": "持续治理可靠性",
+          "description": "已有测试通过不能替代持久基线、来源、SLA、策略和授权的实现及长期运行验证；当前不足以承诺完整治理可靠性。",
+          "evidence": "research/2026-09-15-dec-implementation-review.md:106",
+          "mitigation": "逐项定义诊断身份、基线演进及来源追踪契约，补齐持久化和回归测试，并完成Windows扫描及远程CI验证后再作能力承诺。",
+          "id": "risk:2",
+          "verified": true
+        },
+        {
+          "level": "medium",
+          "category": "职责边界与兼容性",
+          "description": "完整治理职责与现有两个申报修改模块之间的边界未明确，公开格式可变更范围也未确认；存在耦合和兼容性风险，但没有证据证明已触发破坏接口的一票否决条件。",
+          "evidence": "research/2026-09-15-dec-implementation-review.md:106",
+          "mitigation": "先明确模块职责和兼容性契约；涉及格式变化时提供版本化迁移方案，治理策略保持建议或显式选择执行，不自动阻断或改写用户手写内容。",
+          "id": "risk:3",
+          "verified": true
+        }
+      ],
+      "summary": "完整自研路线覆盖治理目标较广，但新增成本最高、关键能力尚未实现且MSVC实扫待验证，不宜作为当前首版优先路径，更适合M0验收后按明确职责和兼容性契约分期推进。"
+    }
+  ]
+}

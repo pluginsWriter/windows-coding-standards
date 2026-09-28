@@ -1,0 +1,10 @@
+schema_version: 1
+mode: advisory
+analyzer: clang-tidy
+version: '21.1.6'
+parameter_basis: Synthetic contract test only; values are not calibration evidence.
+checks:
+  readability-function-cognitive-complexity:
+    Threshold: 1
+    DescribeBasicIncrements: false
+    IgnoreMacros: false

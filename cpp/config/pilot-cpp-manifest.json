@@ -1,0 +1,18 @@
+{
+  "inputs": [
+    "PilotCpp/DeviceInfo.h",
+    "PilotCpp/MonitorDescriptorParser.h",
+    "PilotCpp/SystemInfo.h",
+    "PilotCpp/PilotCpp.h",
+    "PilotCpp/PilotCpp.vcxproj",
+    "PilotCpp/Util.h",
+    "PilotCpp/resource.h"
+  ],
+  "schema_version": 1,
+  "translation_units": [
+    "PilotCpp/DeviceInfo.cpp",
+    "PilotCpp/SystemInfo.cpp",
+    "PilotCpp/PilotCpp.cpp",
+    "PilotCpp/Util.cpp"
+  ]
+}

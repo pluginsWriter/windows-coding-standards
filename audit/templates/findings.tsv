@@ -1,0 +1,2 @@
+id	stage	category	attribution_artifact	expected	actual	evidence	repro_command	repro_count	confidence	fix_target	status	impact	notes
+EXAMPLE	5	C	无（skill 缺对应条目）	应有跨 DLL 字符串边界规则	发现 char* UTF-8 与 LPWSTR 混用点	logs/run-XXXX/scan-summary.txt + 命令输出	./run-audit.sh --src <dir>	2	编译期事实	skill	open示例行：使用前删除本行。category 取 A–F；过五道门后 status 才可改 confirmed	

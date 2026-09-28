@@ -1,0 +1,233 @@
+# =============================================================================
+# .editorconfig —— C#/.NET 编码规范的「唯一权威配置载体」
+# =============================================================================
+# 由 windows-coding-standards skill 的 assets/editorconfig 安装。
+#
+# 维护纪律（违反即制造漂移）：
+#   · 阈值、词表、开关只在本文件维护一份；规范正文与缺陷目录只引用、不复制取值。
+#   · 要在构建期强制某条规则，**必须**用规则 ID 式 dotnet_diagnostic.<ID>.severity；
+#     不得使用「选项式 severity」（option = value:warning）—— 后者在 .NET 8 及更早
+#     构建时不被 C#/VB 编译器识别，只在 IDE 生效（.NET 9 起才在构建期生效）。
+#     本文件刻意不含任何选项式 severity；scripts/verify_consistency.sh 会把出现它当 FAIL。
+#
+# 生效前提（三条缺一不可，缺了拿到的就是「假基线 = 假 0 违规」）：
+#   1. 本文件在 root = true 的层级链上，且工程根在其子树内；
+#   2. Directory.Build.props 里 EnforceCodeStyleInBuild = true
+#      —— 不开这一项，命令行构建**默认完全不做** code-style（IDExxxx）分析；
+#   3. 需要构建期强制的规则，其 severity 为 warning 或 error（suggestion / silent 不进构建）。
+#
+# 依据：references/csharp-coding-standards.md §4（格式）、§7.1–§7.2（闸门与配置联动）
+
+root = true
+
+[*]
+charset = utf-8
+indent_style = space
+indent_size = 4
+tab_width = 4
+insert_final_newline = true
+trim_trailing_whitespace = true
+# 行尾必须显式写，不要留空用默认（正文 §4.3）。
+# 模板默认 lf：跨平台协作与 CI 安全。纯 Windows 团队可改 crlf，但——
+# 改这一处必须同步 .gitattributes，并**单独提交**一次全仓行尾重排，严禁与逻辑改动同提交。
+end_of_line = lf
+
+[*.{cs,csx}]
+# 行长 120 列。
+# ⚠️ 本项目前只是 SHOULD：max_line_length 主要被编辑器当作参考线遵守，
+#    Roslyn analyzers 是否在构建期强制**尚未实测**（正文 §4.4 / 附录 D 第 2 条）。
+#    实测出结论前，不得在正文里把行长写成 MUST。
+max_line_length = 120
+
+# ── 人工排版优先（正文 §4.1）──────────────────────────────────────────────
+# 不显式保留这两项，格式化器会把手写的单行块 / 单行语句拆开。
+# [待实测] 两项的默认值是否已为 true（附录 D 第 8 条）；若默认已开，本段说明须修正。
+csharp_preserve_single_line_blocks = true
+csharp_preserve_single_line_statements = true
+
+# ── 必须改的格式项（正文 §4.2）────────────────────────────────────────────
+csharp_new_line_before_open_brace = all
+csharp_new_line_before_else = true
+csharp_new_line_before_catch = true
+csharp_new_line_before_finally = true
+csharp_prefer_braces = true
+csharp_indent_case_contents = true
+csharp_indent_block_contents = true
+csharp_indent_braces = false
+csharp_indent_labels = one_less_than_current
+# case 标签与 switch 同级。注意这与 Swift 侧的 indentSwitchCaseLabels = true 取值相反，
+# 不要照搬（正文 §4.3）。⚠️ 但 VS / VS Code / Rider 的默认都是缩进一级（= true）——
+# 与编辑器默认相反会让「回车后的自动缩进」每次都与格式化结果打架，与 Swift 侧
+# 2 空格那次踩的是同一个坑。此处保留正文的既定取值，但**建议在真实工程上复核一次**。
+csharp_indent_switch_labels = false
+
+# ── using 组织（正文 §4.3）───────────────────────────────────────────────
+dotnet_sort_system_directives_first = true
+dotnet_separate_import_directive_groups = false
+csharp_using_directive_placement = outside_namespace
+
+# =============================================================================
+# 命名规则（正文 §3.4 / §3.5）—— 三段式：symbols → style → rule
+# =============================================================================
+# ⚠️ 两条易错语义（2026-09-14 已按官方文档核实）：
+#
+# (1) 规则在文件里的**书写顺序不影响优先级**。Roslyn 自动按「更具体优先」排序：
+#     required_modifiers 严格超集 → applicable_accessibilities 严格子集 → applicable_kinds 严格子集；
+#     三者都区分不出时，退化为按**规则名字典序**。
+#     （VS 2019 16.2 之前是「先写者优先」，本文件按新语义书写。）
+#
+# (2) required_modifiers 只能表达「**有**某修饰符」，不能表达「**没有**某修饰符」。
+#     所以「私有实例字段用 _、私有静态字段用 s_」必须定义成两组独立规则，
+#     由「修饰符严格超集者优先」让 static 组自动胜出。
+#
+# (3) rule 里写的 severity 只在 IDE 生效；**构建期强制靠文件末尾的 dotnet_diagnostic.IDE1006.severity**。
+
+# ── 符号组（symbols）─────────────────────────────────────────────────────
+dotnet_naming_symbols.interfaces.applicable_kinds = interface
+dotnet_naming_symbols.interfaces.applicable_accessibilities = *
+
+dotnet_naming_symbols.types.applicable_kinds = class, struct, enum, delegate
+dotnet_naming_symbols.types.applicable_accessibilities = *
+
+dotnet_naming_symbols.members.applicable_kinds = property, event, method
+dotnet_naming_symbols.members.applicable_accessibilities = *
+
+dotnet_naming_symbols.constants.applicable_kinds = field
+dotnet_naming_symbols.constants.required_modifiers = const
+
+# 交集规则：私有常量。（const 隐式 static，会被下面的 private_static_fields 组一并匹配到）
+dotnet_naming_symbols.private_constants.applicable_kinds = field
+dotnet_naming_symbols.private_constants.applicable_accessibilities = private
+dotnet_naming_symbols.private_constants.required_modifiers = const
+
+dotnet_naming_symbols.type_parameters.applicable_kinds = type_parameter
+dotnet_naming_symbols.type_parameters.applicable_accessibilities = *
+
+dotnet_naming_symbols.parameters_and_locals.applicable_kinds = parameter, local, local_function
+dotnet_naming_symbols.parameters_and_locals.applicable_accessibilities = *
+
+dotnet_naming_symbols.private_fields.applicable_kinds = field
+dotnet_naming_symbols.private_fields.applicable_accessibilities = private
+
+dotnet_naming_symbols.private_static_fields.applicable_kinds = field
+dotnet_naming_symbols.private_static_fields.applicable_accessibilities = private
+dotnet_naming_symbols.private_static_fields.required_modifiers = static
+
+# async 方法：required_modifiers 的允许值里**包含 async**，因此内置规则能管 Async 后缀。
+# ⚠️ 只匹配带 `async` 关键字的方法；返回 Task 但没写 async 的方法**匹配不到**，
+#    那部分需要第三方分析器（Roslynator RCS1046 等），正文 §3.4 已按此拆分定级。
+dotnet_naming_symbols.async_methods.applicable_kinds = method
+dotnet_naming_symbols.async_methods.applicable_accessibilities = *
+dotnet_naming_symbols.async_methods.required_modifiers = async
+
+# ── 命名样式（style）────────────────────────────────────────────────────
+# 注意：capitalization 是必填项，缺了整套样式会被忽略。
+dotnet_naming_style.i_pascal_case.capitalization = pascal_case
+dotnet_naming_style.i_pascal_case.required_prefix = I
+
+dotnet_naming_style.pascal_case.capitalization = pascal_case
+dotnet_naming_style.camel_case.capitalization = camel_case
+
+dotnet_naming_style.private_field_camel_case.capitalization = camel_case
+dotnet_naming_style.private_field_camel_case.required_prefix = _
+
+dotnet_naming_style.private_static_field_camel_case.capitalization = camel_case
+dotnet_naming_style.private_static_field_camel_case.required_prefix = s_
+
+dotnet_naming_style.async_suffix.capitalization = pascal_case
+dotnet_naming_style.async_suffix.required_suffix = Async
+
+# ── 规则（rule）──────────────────────────────────────────────────────────
+dotnet_naming_rule.interfaces_start_with_i.symbols = interfaces
+dotnet_naming_rule.interfaces_start_with_i.style = i_pascal_case
+dotnet_naming_rule.interfaces_start_with_i.severity = warning
+
+dotnet_naming_rule.types_are_pascal_case.symbols = types
+dotnet_naming_rule.types_are_pascal_case.style = pascal_case
+dotnet_naming_rule.types_are_pascal_case.severity = warning
+
+dotnet_naming_rule.members_are_pascal_case.symbols = members
+dotnet_naming_rule.members_are_pascal_case.style = pascal_case
+dotnet_naming_rule.members_are_pascal_case.severity = warning
+
+dotnet_naming_rule.constants_are_pascal_case.symbols = constants
+dotnet_naming_rule.constants_are_pascal_case.style = pascal_case
+dotnet_naming_rule.constants_are_pascal_case.severity = warning
+
+# 私有常量（交集规则）。⚠️ 脆弱点：本组与 private_static_fields 的修饰符集合互不包含
+# （{const} vs {static}）、可访问性与符号集相同 → 按「更具体优先」排序时**区分不出**，
+# 会退化为规则名字典序。当前命名为 constants... / private_constants... 使其排在
+# private_static_fields... 之前。[待实测] 须用一个 private const 字段验证它实际落在哪条规则上。
+dotnet_naming_rule.private_constants_are_pascal_case.symbols = private_constants
+dotnet_naming_rule.private_constants_are_pascal_case.style = pascal_case
+dotnet_naming_rule.private_constants_are_pascal_case.severity = warning
+
+dotnet_naming_rule.type_parameters_are_pascal_case.symbols = type_parameters
+dotnet_naming_rule.type_parameters_are_pascal_case.style = pascal_case
+dotnet_naming_rule.type_parameters_are_pascal_case.severity = suggestion
+
+dotnet_naming_rule.parameters_and_locals_are_camel_case.symbols = parameters_and_locals
+dotnet_naming_rule.parameters_and_locals_are_camel_case.style = camel_case
+dotnet_naming_rule.parameters_and_locals_are_camel_case.severity = suggestion
+
+dotnet_naming_rule.private_fields_are_underscored_camel.symbols = private_fields
+dotnet_naming_rule.private_fields_are_underscored_camel.style = private_field_camel_case
+dotnet_naming_rule.private_fields_are_underscored_camel.severity = warning
+
+dotnet_naming_rule.private_static_fields_are_s_prefixed.symbols = private_static_fields
+dotnet_naming_rule.private_static_fields_are_s_prefixed.style = private_static_field_camel_case
+dotnet_naming_rule.private_static_fields_are_s_prefixed.severity = warning
+
+dotnet_naming_rule.async_methods_end_with_async.symbols = async_methods
+dotnet_naming_rule.async_methods_end_with_async.style = async_suffix
+dotnet_naming_rule.async_methods_end_with_async.severity = warning
+
+# =============================================================================
+# 规则严重性 —— 构建期强制必须用规则 ID 式
+# =============================================================================
+# 分档纪律（正文 §8）：存量工程**不要一次全开**。先「正确性 + 安全」，再「性能 + 可靠性」，
+# 最后「可维护性 + 样式」（样式类初期限定 suggestion）。每开一档重采一次基线。
+
+# 命名（所有命名规则共用 IDE1006 这一个 ID）
+dotnet_diagnostic.IDE1006.severity = warning
+
+# 格式与 using
+dotnet_diagnostic.IDE0055.severity = warning
+dotnet_diagnostic.IDE0011.severity = warning
+dotnet_diagnostic.IDE0065.severity = suggestion
+dotnet_diagnostic.IDE0079.severity = suggestion
+# [待实测] 未使用 using 在构建期是否上报，取决于 GenerateDocumentationFile（附录 D 第 4 条）
+dotnet_diagnostic.IDE0005.severity = suggestion
+
+# 文档注释
+dotnet_diagnostic.CS1591.severity = warning
+
+# 正确性 + 安全（第一批）
+dotnet_diagnostic.CA1031.severity = warning
+dotnet_diagnostic.CA1051.severity = warning
+dotnet_diagnostic.CA2000.severity = warning
+dotnet_diagnostic.CA1707.severity = warning
+dotnet_diagnostic.CA2100.severity = warning
+dotnet_diagnostic.CA5394.severity = warning
+
+# 性能 + 可靠性（第二批）
+dotnet_diagnostic.CA1819.severity = warning
+dotnet_diagnostic.CA1861.severity = suggestion
+# [待实测] CA1502 的启用方式与阈值配置键名（附录 D 第 5 条）
+dotnet_diagnostic.CA1502.severity = suggestion
+
+# =============================================================================
+# 若引入 StyleCop.Analyzers，必须同时启用下面这份「关闭清单」（正文 §7.3）
+# =============================================================================
+# 引入理由只有一个：SA1516（成员之间必须有分隔空行）与 SA1201（成员顺序）是**唯一**的
+# 机器检出途径 —— 即 Swift 侧只能自写 verify_member_spacing.sh 的那条规则。
+# 代价：约 100 条规则，且与内置规则重叠。**不关掉重叠项，同一处问题会报两遍、噪音翻倍。**
+# 另注：StyleCop.Analyzers 至今没有 1.2.0 正式版（NuGet 最新 1.2.0-beta.556，2023-12-21），
+#      仓库仍在维护；「它已归档 / 已并入 NetAnalyzers」的说法不实。
+#
+# dotnet_diagnostic.SA1516.severity = warning
+# dotnet_diagnostic.SA1201.severity = suggestion
+# # ↓ 与内置规则重叠，必须关闭
+# dotnet_diagnostic.SA1600.severity = none    # 公开成员文档注释 —— 已由 CS1591 管
+# dotnet_diagnostic.SA0001.severity = none    # 文件头 —— 已由 IDE0073 管
+# dotnet_diagnostic.SA1101.severity = none    # this. 限定 —— 已由内置 dotnet_style_qualification 管

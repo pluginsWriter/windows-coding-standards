@@ -1,0 +1,43 @@
+name: DEC C++ tooling contracts
+
+on:
+  workflow_dispatch:
+  push:
+    paths: ['cpp/**', '.github/workflows/dec-contracts.yml']
+  pull_request:
+    paths: ['cpp/**', '.github/workflows/dec-contracts.yml']
+
+permissions:
+  contents: read
+
+jobs:
+  contracts:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        working-directory: cpp
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install -r requirements-tools.txt
+      - name: Verify real tool availability (do not allow skipped integration tests)
+        run: python -m dec doctor
+      - name: Unit and real clang-tidy contracts
+        run: python -m unittest discover -s tests -v
+      - name: Persist synthetic scan evidence
+        run: python scripts/run_contract_scan.py --output reports/contracts
+      - name: Upload contract evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: dec-contracts-${{ matrix.os }}
+          path: cpp/reports/
+          if-no-files-found: error
+      # No continue-on-error: failed analysis or upload must remain visible.
+      # These fixtures are not pilot-cpp calibration or production M0 acceptance.

@@ -1,0 +1,13 @@
+# 开发笔记与会话记忆 —— 不随仓库分发
+.workbuddy/
+
+# macOS
+.DS_Store
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+*.egg-info/
+build/
+dist/

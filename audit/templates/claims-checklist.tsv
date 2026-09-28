@@ -1,0 +1,13 @@
+id	claim	source	verify_hint	automated	result	evidence	finding_id
+CLM-001	CMake 的 VS 生成器不产出 compile_commands.json（CMAKE_EXPORT_COMPILE_COMMANDS 对 VS 生成器无效）	DEC计划 §1.2 事实#3	run-audit.sh 自动（VS 生成器探针）	yes	untested		
+CLM-002	CMake Ninja 生成器 + CMAKE_EXPORT_COMPILE_COMMANDS=ON 可产出 compile_commands.json	DEC计划 T-DEC-02 隐含通路	run-audit.sh 自动（Ninja 探针）	yes	untested		
+CLM-003	clang-tidy readability-function-cognitive-complexity 在 Windows 可启用并对超阈值函数报诊断	DEC计划 T-DEC-20	run-audit.sh 自动（cognitive_complexity.cpp 夹具）	yes	untested		
+CLM-004	单独一行的 NOLINT 不能抑制下一行诊断；须用 NOLINTNEXTLINE	DEC计划 T-DEC-13/61	run-audit.sh 自动（两个 NOLINT 夹具）	yes	untested		
+CLM-005	MSVC #pragma warning(push)+disable 缺 pop 时抑制范围泄漏到翻译单元末尾	DEC计划 T-DEC-61	需 cl 在 PATH：VS Native Tools 命令行里启动 Git Bash 再跑 run-audit.sh（对照组+实验组夹具）	semi	untested		
+CLM-006	MSVC /analyze 无认知复杂度与嵌套深度的对等检查	DEC计划 T-DEC-26；research/dec-native-ai.md	需 cl；/analyze 跑 cognitive_complexity.cpp 夹具（排除性证据）	semi	untested		
+CLM-007	clang-tidy 可经 clang-cl 驱动消费 MSVC 编译目标（双工具链可共存）	research/dec-native-ai.md	装 clang-cl 后对夹具跑 clang-tidy，编译参数带 --target=x86_64-pc-windows-msvc（以本机为准）	manual	untested		
+CLM-008	Cppcheck 可导入 compile_commands.json 且 --suppressions-list 语法有效	research/dec-baseline-sources.md	cppcheck 可运行仅是半证：按官方文档做最小抑制验证后回填	manual	untested		
+CLM-009	嵌套深度检查在 Windows 工具链有可用实现（具体是哪个工具？）	DEC计划 E1 扩展项	逐个试 lizard / cppcheck / clang-tidy 选项；确认无实现则记 C 类缺口 finding	manual	untested		
+CLM-010	clang-tidy 结果可转 SARIF 且可跨次运行匹配（partialFingerprints）	research/dec-baseline-sources.md	clang-tidy-sarif 或 IDE 输出通道做最小转换验证	manual	untested		
+CLM-011	PVS-Studio 基线抑制语义：前后行哈希+诊断ID，行移动不重现	research/dec-baseline-sources.md	需许可产品；无产品保持 untested，不得在任何文档里引用为已验证	manual	untested		
+CLM-012	大小写不匹配的 include 在大小写敏感文件系统上直接编译失败	审计设计（跨平台移植风险）	由 scan-macos-traces.sh 的 include_case_mismatch 候选覆盖，agent 分诊后回填	yes	untested		

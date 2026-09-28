@@ -1,0 +1,74 @@
+<Project>
+
+  <!--
+    C#/.NET 编码规范的「第二道闸门」—— 构建期开关。
+    由 windows-coding-standards skill 的 assets/Directory.Build.props 安装。
+
+    与 .editorconfig 的分工（不要混淆）：
+      · .editorconfig           → 规则、阈值、命名约定、severity（唯一权威）
+      · Directory.Build.props   → 开关与分析档位（本文件，不重复任何规则取值）
+
+    放在解决方案根目录，MSBuild 会自动向上查找并应用到子树内所有项目。
+    依据：references/csharp-coding-standards.md §7.1 / §7.2 / §8
+  -->
+
+  <PropertyGroup>
+
+    <!-- ① 可空性必须开启（正文 §5.1 MUST）。不开则 CS8600–CS8629 系列不参与。 -->
+    <Nullable>enable</Nullable>
+
+    <!-- ② 生成 XML 文档文件。开启后 CS1591（公开成员缺文档注释）才可能上报（正文 §6.1）。
+         [待实测] IDE0005（未使用 using）在构建期是否上报也依赖本项（附录 D 第 4 条）。 -->
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+
+    <!-- ③ 让 code-style（IDExxxx）参与构建。
+         **不开这一项，命令行构建默认完全不做样式分析** —— .editorconfig 写得再全，
+         dotnet build 与 CI 也会全绿，那是一个「假基线」（正文 §7.2）。
+         这是 .NET 侧最容易踩、也最难自查的一个坑。 -->
+    <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+
+    <!-- ④ 规则集档位。
+         留空 = 用当前 SDK 的默认值，**SDK 升级会静默带来新规则**，构建行为可能突然变化。
+         写死（如 latest-recommended / 8.0）= 行为可预期，但会滞后于新版规则。
+         本模板刻意不写死：先按附录 D 第 3 条实测当前 SDK 的行为，再决定钉哪个档位。 -->
+    <!-- <AnalysisLevel>latest-recommended</AnalysisLevel> -->
+
+    <!-- ⑤ 构建期是否把警告当错误。
+         ⚠️ 默认 false 是**有意的**：存量工程规则未清零时设为 true，第一次构建必挂，
+            结果是团队为了让它变绿而放宽阈值 —— 那正好违反「禁止为通过检查放宽阈值」。
+         正确节奏：分档推进（正文 §8）→ 规则档位稳定、基线清零 → 再改 true。
+         那一刻「跑不过就提交不了」这条闸门才真正成立，且不依赖任何 git 钩子。 -->
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+
+  </PropertyGroup>
+
+  <!--
+    ── 可选一：StyleCop.Analyzers ─────────────────────────────────────────────
+    只在需要 SA1516（成员之间必须有分隔空行）或 SA1201（成员顺序）时引入 ——
+    这是内置规则查不出的那几条里唯一有现成分析器的。
+    ⚠️ 引入时必须**同时提交一份「关闭清单」**（写在 .editorconfig 的 StyleCop 段），
+       否则 SA1xxx 与 IDE0055 会对同一处格式问题双报，噪音翻倍（正文 §7.3）。
+    ⚠️ 版本提醒：StyleCop.Analyzers 至今没有 1.2.0 正式版，NuGet 最新为 1.2.0-beta.556。
+       引用前请自行确认当前最新版本号，不要照抄这里的数字。
+  -->
+  <!--
+  <ItemGroup>
+    <PackageReference Include="StyleCop.Analyzers" Version="1.2.0-beta.556" PrivateAssets="all" />
+    <AdditionalFiles Include="$(MSBuildThisFileDirectory)stylecop.json" />
+  </ItemGroup>
+  -->
+
+  <!--
+    ── 可选二：Roslynator.Analyzers ──────────────────────────────────────────
+    只在需要「返回 Task 但没写 async 关键字的方法也要以 Async 结尾」时引入
+    （内置命名规则只能覆盖带 async 关键字的那半，见正文 §3.4）。
+    对应规则 RCS1046 **默认关闭**，引入后须在 .editorconfig 里显式打开：
+      dotnet_diagnostic.RCS1046.severity = warning
+  -->
+  <!--
+  <ItemGroup>
+    <PackageReference Include="Roslynator.Analyzers" Version="此处填当前版本" PrivateAssets="all" />
+  </ItemGroup>
+  -->
+
+</Project>

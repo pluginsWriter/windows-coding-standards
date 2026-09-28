@@ -1,0 +1,32 @@
+{
+  "date": "2026-09-15",
+  "host": "macOS",
+  "python": "3.14.7",
+  "clang_tidy": "21.1.6",
+  "tests": {
+    "passed": 34,
+    "skipped": 0,
+    "real_clang_tests": 8
+  },
+  "contract_scan": {
+    "translation_units": 3,
+    "status": "checked",
+    "report": "reports/contracts-initial/scan/report.json"
+  },
+  "pilot_cpp_preflight": {
+    "status": "not-checked",
+    "expected": 4,
+    "checked": 0,
+    "reason": "No actual compile_commands.json supplied; Windows SDK unavailable on this host"
+  },
+  "pilot_cpp_worktree": "unchanged",
+  "legacy_consistency": {
+    "command": "LC_ALL=C bash scripts/verify_consistency.sh",
+    "fail": 0,
+    "warn": 3,
+    "note": "Without LC_ALL=C the existing shell script fails variable parsing under this locale; script was not modified."
+  },
+  "windows_execution": "not performed",
+  "remote_ci": "not executed",
+  "production_enforcement": "not implemented"
+}

@@ -1,0 +1,12 @@
+schema_version: 1
+mode: advisory
+analyzer: clang-tidy
+version: '21.1.6'
+parameter_basis: >-
+  Native cognitive-complexity tool-default trial, not a calibrated DEC threshold.
+  No normative DEC ID is assigned until upstream rules are verified.
+checks:
+  readability-function-cognitive-complexity:
+    Threshold: 25
+    DescribeBasicIncrements: false
+    IgnoreMacros: false
