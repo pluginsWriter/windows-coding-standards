@@ -107,7 +107,7 @@ crlf_count=$(grep -rlI $'\r' "$SRC" $EXD --include='*.cpp' --include='*.h' --inc
 total=$(wc -l < "$OUT" | tr -d ' ')
 echo "== 扫描完成: $SRC"
 echo "== 已默认排除目录: third_party / build / .git 等第三方与构建目录（清单见脚本头部 EXD）"
-echo "== 候选总数: $total（候选 ≠ 发现，需过五道门分诊）"
+echo "== 候选总数: ${total}（候选 ≠ 发现，需过五道门分诊）"
 echo "== CRLF 文件计数（信息项，Windows 上属常态）: $crlf_count"
 if [ "$total" -gt 0 ]; then
   echo "== 分类计数:"

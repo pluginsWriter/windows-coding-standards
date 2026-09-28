@@ -79,7 +79,7 @@ if [ -x "$VSWHERE" ]; then
     done
     export PATH
     echo "vswhere => $VSPATH" >> "$RUN/env.txt"
-    echo "VS installation => $VSPATH_U（已前插其内置 CMake/Ninja/LLVM/MSBuild 到 PATH；cl 仍需 Native Tools 环境）" >> "$RUN/env.txt"
+    echo "VS installation => ${VSPATH_U}（已前插其内置 CMake/Ninja/LLVM/MSBuild 到 PATH；cl 仍需 Native Tools 环境）" >> "$RUN/env.txt"
   else
     echo "vswhere => 有 exe 但无 VC 工作负载结果（未装 C++ 桌面开发组件？）" >> "$RUN/env.txt"
   fi

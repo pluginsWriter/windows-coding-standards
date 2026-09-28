@@ -1,0 +1,146 @@
+# =============================================================================
+# windows-coding-standards —— .clang-format 模板（C++ 侧）
+# =============================================================================
+# 用法：复制到 C++ 工程根目录，改名为 `.clang-format`。
+#
+# 【本文件是 C++ 格式的唯一权威】
+#   规范正文（references/cpp-coding-standards.md §3）只声明取向与"必须改的
+#   格式项"，不复制这里的任何取值。改这里就够了，不用改正文。
+#
+# 【实测状态（2026-09-28）】
+#   已用 **clang-format 21.1.6** 实跑核验，结论：
+#     · 本文件的全部选项名都被当前版本接受（曾有一处不被接受，已修，见下）
+#     · `BasedOnStyle: Microsoft` 的实际预设值已读取并逐项对照（见下方各处注释）
+#     · `--dry-run --Werror` 行为已实测：未格式化文件 exit 1、已格式化文件 exit 0
+#   ⚠️ 取值随版本变化：换 clang-format 版本（尤其跨大版本）后必须重跑：
+#
+#       clang-format --version
+#       clang-format -style=Microsoft -dump-config   # 看预设实际取值
+#       clang-format -style=file -dump-config        # 看本文件能否被**干净读取**
+#
+#   ⚠️ 最危险的失效模式不是"某个选项不生效"，而是**整份文件被拒绝读取**：
+#      选项名写错（例如把 `.editorconfig` 的 `end_of_line` 误写成 `EndOfLine`）
+#      会让 clang-format 报 `error: unknown key` 并**拒绝读取整个 .clang-format**（exit 1）——
+#      该文件里**一条配置都不生效**，而很多人不会去看 stderr。
+#      ⇒ 判据只有一条：`clang-format -style=file -dump-config` 必须 **stderr 为空**。
+#      本仓自检第 17 节会在有 clang-format 时自动做这件事。
+#
+# 【与 .editorconfig 的关系】
+#   缩进宽度、行尾、charset 这些**跨语言项**以工程根的 `.editorconfig`
+#   的 `[*]` 段为权威 —— 本文件里的对应取值必须与它一致。
+#   本文件里的其余项是 **C++ 特有项**，不受 `.editorconfig` 约束，
+#   也**不得**从 C# 侧推导（见规范正文 §1.4）。
+# =============================================================================
+
+---
+# 基础风格：七个合法值之一（LLVM / Google / Chromium / Mozilla / WebKit /
+# Microsoft / GNU）。本规范选 Microsoft —— 理由见正文 §3.1。
+BasedOnStyle: Microsoft
+
+# 【已实测】Microsoft 预设的实际取值（clang-format 21.1.6，与 LLVM 预设对照）：
+#     IndentWidth                      Microsoft=4     LLVM=2
+#     ColumnLimit                      Microsoft=120   LLVM=80
+#     IndentCaseLabels                 Microsoft=false LLVM=false
+#     BreakBeforeBraces                Microsoft=Custom  ← **不是 Allman**
+#     PointerAlignment                 Microsoft=Right LLVM=Right
+#     AccessModifierOffset             Microsoft=-2    LLVM=-2
+#     AllowShortFunctionsOnASingleLine Microsoft=None  LLVM=All
+#   ⇒ 两条结论：
+#     ① 缩进宽度与列宽**恰好与我们想要的值相同**，但这属巧合，仍显式写出 ——
+#        预设取值随版本演进，不写死就会在某次升级后静默改变格式。
+#     ② **`BreakBeforeBraces` 是 `Custom` 不是 `Allman`、`AccessModifierOffset` 是 `-2`
+#        不是 `-4`** —— 本文件在这两处**偏离了 Microsoft 预设**（见下方各自的理由）。
+#        凡写"Microsoft 惯例如何"之前，先看这张表，不要凭印象。
+
+# 限定语言：本文件只作用于 C++。C# 文件由 .editorconfig 管，两者不重叠。
+Language: Cpp
+
+# 标准版本必须显式写，不依赖编译器或格式化器的默认值。
+Standard: c++20
+
+# --- 跨语言项：必须与 .editorconfig 的 [*] 段一致 -------------------------
+# 缩进宽度（4）：与 C# 侧一致 —— 这是唯一允许两侧共享的一类取值。
+IndentWidth: 4
+TabWidth: 4
+UseTab: Never
+# ⚠️ 键名是 `LineEnding`，**不是** `EndOfLine`。
+#    `end_of_line` 是 **`.editorconfig` 的键**，clang-format 里**没有** `EndOfLine` ——
+#    写错会让 clang-format 报 `error: unknown key 'EndOfLine'` 并**拒绝读取整个文件**
+#    （exit 1，本文件里一条配置都不生效）。已实测（clang-format 21.1.6）。
+#    取值范围：LF / CRLF / DeriveLF / DeriveCRLF。
+LineEnding: LF
+
+# --- C++ 特有项：由本文件单独决定，不得从 C# 侧推导 -----------------------
+# 列宽（120）。与 C# 侧同值属于巧合而非要求 —— 两侧各自独立定值。
+ColumnLimit: 120
+
+# `case` 是否缩进：C++ 侧由本项决定。
+# ⚠️ 与 C# 侧的 `csharp_indent_switch_labels` 是两个不同的开关，
+#    取值互不参考（C# 侧取 false）。
+IndentCaseLabels: true
+
+# 指针 / 引用贴左还是贴右：`int* p`（Right）还是 `int *p`（Left）。
+# Microsoft 惯例是贴类型（Right）。显式写出，不依赖预设。
+PointerAlignment: Right
+DerivePointerAlignment: false
+
+# 大括号位置：显式取 Allman（左括号另起一行）。
+# ⚠️ **不要说"这是 Microsoft 惯例"** —— 已实测：`BasedOnStyle: Microsoft` 的预设值是
+#    `Custom`（一个分构造定制的组合），**不是** `Allman`。本文件取 Allman 是**明确的
+#    偏离**，理由是：本规范把"左括号另起一行"列为必须的格式项，而 Allman 是唯一
+#    能无例外地表达这一点的取值。显式写出，避免预设演进导致静默变化。
+BreakBeforeBraces: Allman
+
+# 访问修饰符（public: / private:）的缩进偏移。
+# ⚠️ 已实测：Microsoft 预设是 **-2**；本文件取 **-4**，与 IndentWidth: 4 配对，
+#    使 `public:` 与 `class` 同级（偏移 -4 抵消 4 空格缩进）。属**明确的偏离**。
+AccessModifierOffset: -4
+
+# 成员之间必须有分隔空行（本规范 §3.3 的第 4 类"必须改的格式项"）。
+# 【已实测（clang-format 21.1.6）】`SeparateDefinitionBlocks: Always` **确实生效**：
+#    夹具里两个紧贴的成员函数被插入空行（`private:` 之前也加了空行）。
+#    ⇒ 这一项**不需要**降级为人工评审，格式化器本身就能强制。
+SeparateDefinitionBlocks: Always
+
+# --- 唯一有语义风险的格式化动作：include 重排 ----------------------------
+# `#include` 的**顺序在 C++ 里不是纯风格** —— 它会牵动宏定义顺序、头文件的自包含性
+# 暴露、以及与 PCH / `#pragma once` 的交互。因此这是**唯一一项"格式化就会改行为"**
+# 的自动动作（见 references/change-discipline.md §1.4.1）。
+#
+# 本模板取**保守值**：不自动重排 include 顺序，只保留原有分块。
+# 理由与"人工排版同等有效"的立场一致 —— 唯一有真实风险的自动重排，默认关掉。
+#
+# ⚠️ 必须显式写死，不得依赖预设默认：`SortIncludes` / `IncludeBlocks` 的默认值
+#    在 clang-format 不同大版本之间变过（`SortIncludes` 在 v13 前后语义有变）。
+#    不写死 = 同一份配置在不同机器上产出不同结果，而"格式提交"承诺的是无行为变更。
+#
+# 【已实测（clang-format 21.1.6）】
+#   · `SortIncludes: Never` + `IncludeBlocks: Preserve` 均被接受且**确实生效**：
+#     乱序的 include 被原样保留；同一夹具改成 `CaseSensitive` + `Regroup` 后**立刻重排**
+#     （对照实验，两次都跑过）——即"不重排"是这两项的功劳，不是碰巧。
+#   · 21.x 里 `SortIncludes` 已是**嵌套结构**（`Enabled` / `IgnoreCase`），标量 `Never`
+#     仍被接受并映射为 `Enabled: false`。这就是"跨大版本语义变过"的实证。
+#   核对命令（用 `grep -e A -e B` 避开竖线）：
+#       clang-format -style=file -dump-config | grep -e SortIncludes -e IncludeBlocks
+# ⚠️ **反例**：这里要的是**交替** `A|B`；写成 `A[|]B` 是错的 —— 在 ERE 里 `[|]` 是字符类，
+#    只匹配一个字面竖线字符，于是该命令要求输入里出现字面 "A|B"，**永远零命中**（exit 1）。
+#    它以「核对过了、输出为空」的外观返回，正是正文 §5.1 / §7.3 要防的假绿；
+#    本仓自检第 16 节会机械拦下这种写法。
+SortIncludes: Never
+
+# 保留原有的 include 分块（空行分隔的组），不做重新分组。
+IncludeBlocks: Preserve
+
+# --- 人工排版保护 ---------------------------------------------------------
+# 不重排注释（保护手写的表格与对齐）。
+ReflowComments: false
+
+# 允许短函数写在一行 —— 避免把原本单行的简单函数强行拆开。
+AllowShortFunctionsOnASingleLine: Inline
+
+# 连续空行最多保留 1 行。
+MaxEmptyLinesToKeep: 1
+
+# 文件末尾必须有换行（与 .editorconfig 的 insert_final_newline 一致）。
+InsertNewlineAtEOF: true
+...

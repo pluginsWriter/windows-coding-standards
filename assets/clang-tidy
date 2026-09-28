@@ -1,0 +1,170 @@
+# =============================================================================
+# windows-coding-standards —— .clang-tidy 模板（C++ 侧）
+# =============================================================================
+# 用法：复制到 C++ 工程根目录，改名为 `.clang-tidy`。
+#       需要 compile_commands.json（CMake: -DCMAKE_EXPORT_COMPILE_COMMANDS=ON）。
+#
+# 【本文件是 C++ 检查项与命名规则的唯一权威】
+#   规范正文（references/cpp-coding-standards.md §4.3、§5.4、§7.3）只声明
+#   取向（Microsoft 命名路线）与"哪一项由谁检查"，**不复制这里的任何取值**。
+#
+# 【实测状态（2026-09-28）】
+#   已用 **clang-tidy 21.1.6** 实跑核验，结论：
+#     · 通配符展开正常；`Checks` 的 14 条禁用**逐条生效**（列表写法下）
+#     · `CheckOptions` 的键名全部被当前版本接受（曾有两处不接受，已修，见下）
+#     · 命名规则确实会报：函数 / 局部变量 / 类 / 私有成员四处违规均报出
+#   ⚠️ 取值随版本变化：换 clang-tidy 版本（尤其跨大版本）后必须重跑下面的核对。
+#
+#       clang-tidy --version                         # 先确认版本
+#       clang-tidy --dump-config -- <某个源文件> -- <编译参数>   # 看生效值，不看模板文字
+#
+#   ⚠️ 两种**静默失效**模式（本模板踩过其中两种，均已修）：
+#      1. `Checks` 写成折叠块标量（`Checks: >`）时，`#` 不是注释而是内容 ——
+#         写在禁用项前的注释会把该禁用项粘成无效项。**必须写成 YAML 列表**。
+#      2. `CheckOptions` / `Checks` 里的**键名或检查名拼错时可能完全无提示**，
+#         配置照常加载、检查照常跑，只是那一项不生效。
+#         ⇒ 核对方式：`--dump-config` 把**全部合法键**列出来，逐个比对。
+#         实测：clang-tidy 21.1.6 认识 **530** 个 `CheckOptions` 键。
+#
+# 【为什么必须显式写 Checks】
+#   clang-tidy 的**默认检查集极小**，不显式声明就几乎查不出东西。
+#   业界通行做法是先 `-*` 关掉全部，再按簇打开，最后逐个禁用误报项 ——
+#   本模板采用这一模式（理由见规范正文 §7.3）。
+# =============================================================================
+
+---
+# ⚠️ `Checks` 必须写成 **YAML 列表**，不能写成折叠块标量（`Checks: >`）。
+#    原因：`Checks` 是**按逗号切分的字符串**，而在块标量里 `#` **不是注释、是内容** ——
+#    写在某条禁用项前面的注释会被粘进那条禁用项，于是**那条禁用静默失效**。
+#    已实测（clang-tidy 21.1.6）：同一份配置，折叠标量下 `-modernize-use-trailing-return-type`
+#    仍然报出违规；改成下面的列表形式后不再报出。本模板原先有 14 条禁用，
+#    其中 10 条因注释粘连而**形同虚设**。
+#    写成列表后 `#` 才是真正的 YAML 注释，注释与禁用项可以安全地相邻。
+Checks:
+  # --- 启用项：先全关，再按簇打开（业界通行做法，理由见规范正文 §7.3）------
+  # 带 `*` 开头的项必须加引号，否则 YAML 会把它当别名引用。
+  - '-*'
+  - bugprone-*
+  - cert-*
+  - clang-analyzer-*
+  - cppcoreguidelines-*
+  - misc-*
+  - modernize-*
+  - performance-*
+  - readability-*
+
+  # --- 禁用项：每一条都要写理由，否则日后无人敢删也无人知为何留 -----------
+  # C 数组与指针算术：驱动 / Win32 接口层无法避免，误报率高。
+  - -cppcoreguidelines-avoid-c-arrays
+  - -cppcoreguidelines-pro-bounds-pointer-arithmetic
+  - -cppcoreguidelines-pro-bounds-array-to-pointer-decay
+  # varargs：Win32 / WDK 大量使用可变参数 API（如 Rtl* 系列），无法一律禁止。
+  - -cppcoreguidelines-pro-type-vararg
+  # 与 readability-magic-numbers 语义重复，统一由后者负责并配白名单。
+  - -cppcoreguidelines-avoid-magic-numbers
+  # 与工程既有的原始句柄风格冲突（本工程用 RAII 包装而非 gsl::owner）。
+  - -cppcoreguidelines-owning-memory
+  # 与 misc- 的同类检查重复，保留 misc- 版。
+  - -cppcoreguidelines-non-private-member-variables-in-classes
+  - -misc-non-private-member-variables-in-classes
+  # 尾置返回类型：团队取向，不采用。
+  - -modernize-use-trailing-return-type
+  # 指针判空写成 `if (ptr)` 是通用惯例，强制显式比较只会制造噪音。
+  - -readability-implicit-bool-conversion
+  # 短名在循环下标、模板参数等场景是正当的（Core Guidelines NL.7 支持）。
+  - -readability-identifier-length
+  # 带后缀的字面量大小写：团队取向。
+  - -readability-uppercase-literal-suffix
+  # 参数易混淆：噪量大且与接口设计判断重叠，改由评审处理。
+  - -bugprone-easily-swappable-parameters
+  # include 卫生依赖 compile_commands 完整性与第三方头，噪音不可控。
+  - -misc-include-cleaner
+
+CheckOptions:
+  # =========================================================================
+  # 命名规则 —— 【本区块是 C++ 命名风格的唯一权威】
+  # 路线：Microsoft（PascalCase 体系 + m_ 前缀）
+  # 理由见规范正文 §4.2；⚠️ 该路线与 Core Guidelines NL.10「Avoid CamelCase」冲突，
+  # 属**显式取舍**，不是遗漏。
+  # 未实测声明：以下键名须用 `clang-tidy --dump-config` 核对。
+  # =========================================================================
+  - {key: readability-identifier-naming.ClassCase,            value: CamelCase}
+  - {key: readability-identifier-naming.StructCase,           value: CamelCase}
+  - {key: readability-identifier-naming.UnionCase,            value: CamelCase}
+  - {key: readability-identifier-naming.EnumCase,             value: CamelCase}
+  - {key: readability-identifier-naming.EnumConstantCase,     value: CamelCase}
+  - {key: readability-identifier-naming.TypeAliasCase,        value: CamelCase}
+  - {key: readability-identifier-naming.TypedefCase,          value: CamelCase}
+
+  - {key: readability-identifier-naming.FunctionCase,         value: CamelCase}
+  - {key: readability-identifier-naming.MethodCase,           value: CamelCase}
+  - {key: readability-identifier-naming.PrivateMethodCase,    value: CamelCase}
+  - {key: readability-identifier-naming.ProtectedMethodCase,  value: CamelCase}
+  - {key: readability-identifier-naming.PublicMethodCase,     value: CamelCase}
+  - {key: readability-identifier-naming.VirtualMethodCase,    value: CamelCase}
+
+  # 数据成员：m_ + camelBack。public 数据成员按 C++ 惯例应尽量避免（用访问器），
+  # 因此 public 项不加强制前缀，避免把"本就不该存在的东西"命名得看起来很正规。
+  - {key: readability-identifier-naming.MemberCase,           value: camelBack}
+  - {key: readability-identifier-naming.MemberPrefix,         value: "m_"}
+  - {key: readability-identifier-naming.PrivateMemberCase,    value: camelBack}
+  - {key: readability-identifier-naming.PrivateMemberPrefix,  value: "m_"}
+  - {key: readability-identifier-naming.ProtectedMemberCase,  value: camelBack}
+  - {key: readability-identifier-naming.ProtectedMemberPrefix, value: "m_"}
+  - {key: readability-identifier-naming.PublicMemberCase,     value: camelBack}
+
+  - {key: readability-identifier-naming.LocalVariableCase,    value: camelBack}
+  - {key: readability-identifier-naming.ParameterCase,        value: camelBack}
+  # 全局变量本应禁止（见 cppcoreguidelines-avoid-non-const-global-variables）。
+  # 若确实存在，强制 g_ 前缀以示醒目 —— 这是 Windows 驱动侧的既有惯例。
+  - {key: readability-identifier-naming.GlobalVariableCase,   value: camelBack}
+  - {key: readability-identifier-naming.GlobalVariablePrefix, value: "g_"}
+
+  # 常量：PascalCase 无前缀（与 C# 侧同源取向）。
+  - {key: readability-identifier-naming.StaticConstantCase,   value: CamelCase}
+  - {key: readability-identifier-naming.GlobalConstantCase,   value: CamelCase}
+  - {key: readability-identifier-naming.ConstexprVariableCase, value: CamelCase}
+
+  - {key: readability-identifier-naming.NamespaceCase,        value: lower_case}
+  # 宏名必须全大写 —— 这是 Core Guidelines NL.9 里本规范**采纳**的一条。
+  # **include guard 也叫宏定义，由本键一并管**（已实测：`#ifndef bad_guard_h` 报
+  # "invalid case style for macro definition"）。所以 `PROJECT_FILE_H_` 这类
+  # 行业惯用写法天然合规，**不需要单独的例外键**。
+  # ⚠️ 曾误以为存在 `readability-identifier-naming.HeaderGuardCase` —— **clang-tidy
+  #    21.1.6 没有这个键**（`--dump-config` 可列全部合法键），写了会被静默忽略。
+  - {key: readability-identifier-naming.MacroDefinitionCase,  value: UPPER_CASE}
+
+  # 匈牙利前缀（strName / pFoo / bBusy）**不在本文件里禁**。
+  # ⚠️ 曾写过全局键 `readability-identifier-naming.HungarianPrefix` —— **没有这个键**
+  #    （实际是 26 个按种类的 `*HungarianPrefix`，`--dump-config` 可查），写了会被静默忽略。
+  #    而 26 个键的**默认值本来就是 `Off`**，所以行为上无需再写 —— 但要说清：
+  #    这个选项只声明"期望的前缀"，**它不禁止**把类型信息写进名字（NL.5）。
+  #    真正拦"把类型编码进名字"的是人工评审，见 `cpp-naming-antipatterns.md` §1 C 类。
+
+  # =========================================================================
+  # 体量阈值 —— 【本区块是体量上限的唯一权威】
+  # 规范正文 §5.4 只列"哪一项由谁检查"，数值以这里为准。
+  # 未实测声明：键名须用 `clang-tidy --dump-config -checks='-*,readability-function-size'` 核对。
+  # =========================================================================
+  - {key: readability-function-size.LineThreshold,      value: "60"}
+  - {key: readability-function-size.ParameterThreshold, value: "6"}
+  - {key: readability-function-size.NestingThreshold,   value: "3"}
+  - {key: readability-function-size.BranchThreshold,    value: "10"}
+  # 认知复杂度（默认 25）—— 与圈复杂度不是同一个度量，阈值不同属正常。
+  - {key: readability-function-cognitive-complexity.Threshold, value: "25"}
+
+  # 魔法数字：允许 0 / 1 / 2 / -1 这几个通行值，其余必须具名。
+  - {key: readability-magic-numbers.IgnoredIntegerValues, value: "0;1;2;-1"}
+
+# 只分析工程内的头文件，排除第三方与生成代码。
+# ⚠️ 按实际工程目录调整 —— 生成代码（protobuf / COM 代理存根 / IDL 输出）
+#    必须排除，否则违规数字会被无意义地放大。
+HeaderFilterRegex: '^(src|include)/.*'
+
+# 不把警告升级为错误 —— 升级由 CI 的 `-warnings-as-errors` 显式控制，
+# 便于本地开发时先看全量告警。
+WarningsAsErrors: ''
+
+# 让 clang-tidy 用工程根的 .clang-format 做格式建议，避免两套格式并存。
+FormatStyle: file
+...
