@@ -1,0 +1,50 @@
+# =============================================================================
+# 行尾与文本属性 —— 让仓库在 Windows / macOS / Linux 上 checkout 出同样的字节
+# =============================================================================
+# 为什么必须有这个文件（不是"讲究"，是阻断项）：
+#
+# 本仓库的脚本全是 bash（`scripts/*.sh`、`audit/*.sh`），要在 **Git Bash / WSL** 下运行。
+# Git for Windows 安装时若接受默认项（"Checkout Windows-style, commit Unix-style"），
+# `core.autocrlf` 就是 **true** —— 于是每个 `.sh` 被 checkout 成 CRLF：
+#   · 轻则 `#!/usr/bin/env bash` 变成 `bash\r`，报"找不到解释器"；
+#   · 重则在 heredoc / 变量展开 / `set -e` 处出现**难以归因的错**（报错行号还是错的）。
+# 显式写死行尾后，行为不再依赖每台机器上的 `core.autocrlf` 设置。
+#
+# ⚠️ 首次引入本文件后需要一次性重排（**必须单独一个提交**，且不与逻辑改动混合）：
+#       git add --renormalize .
+#       git status           # 确认只动了行尾
+#       git commit -m "chore: 归一化行尾（.gitattributes 引入后的一次性重排）"
+# =============================================================================
+
+# 默认：文本文件按内容自动识别，统一以 LF 存入库与工作区。
+* text=auto eol=lf
+
+# Windows 原生命令脚本必须保持 CRLF。
+# 理由：LF 结尾的 `.cmd` / `.bat` 在部分 Windows 版本下标签与跳转解析异常。
+# （本仓库当前只有 `audit/run-audit.cmd` 一个此类文件，它本来就以 CRLF 提交。）
+*.cmd text eol=crlf
+*.bat text eol=crlf
+
+# PowerShell 脚本取 CRLF：Windows PowerShell 5.1 对 LF 脚本的兼容性不如 7.x 稳。
+*.ps1 text eol=crlf
+
+# bash 脚本必须是 LF —— 这是**硬要求**，写在最后以免被上面的规则覆盖。
+*.sh text eol=lf
+
+# 明确锁定 LF 的配置文件：它们的行尾可能被工具读取，不可被平台改写。
+*.editorconfig text eol=lf
+.clang-format text eol=lf
+.clang-tidy text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
+*.tsv text eol=lf
+*.json text eol=lf
+
+# 二进制 / 生成物：禁止行尾与编码转换，也禁止 diff 时按文本处理。
+*.png binary
+*.jpg binary
+*.ico binary
+*.pdf binary
+*.whl binary
+*.zip binary
+.DS_Store binary
