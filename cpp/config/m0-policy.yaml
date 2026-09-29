@@ -2,6 +2,14 @@ schema_version: 1
 mode: advisory
 analyzer: clang-tidy
 version: '21.1.6'
+# ---------------------------------------------------------------------------
+# 【本文件的定位（2026-09-28 补声明）】
+#   这是**规范层配置的一个单检查子集** —— 只服务 DEC 试点的编排与基线对比，
+#   **不是** C++ 侧阈值的出处，也**不得**反过来被引用为规范取值。
+#   体量阈值（函数行数 / 参数个数 / 嵌套深度 / 分支数 / 认知复杂度）的**唯一权威**是
+#   根目录的 `assets/clang-tidy` 的 `CheckOptions` 区块 —— 见规范正文 `references/cpp-coding-standards.md` §5.4。
+#   本文件与它**取值一致**是巧合，不是约束；要改规范阈值，改 `assets/clang-tidy`。
+# ---------------------------------------------------------------------------
 parameter_basis: >-
   Native cognitive-complexity tool-default trial, not a calibrated DEC threshold.
   No normative DEC ID is assigned until upstream rules are verified.

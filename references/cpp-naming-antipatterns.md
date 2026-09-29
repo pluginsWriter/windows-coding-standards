@@ -166,7 +166,15 @@ const std::filesystem::path& configurationPersistenceApplicationSupportNotAbsolu
 namespace cfg { struct PersistPath { /* ... */ }; }
 ```
 
-阈值 60 与函数行数上限 60 一致，便于记忆；**超过即须先按 `design-granularity.md` 判断该不该拆类型**，而不是继续加长。
+本节**就是**这个阈值的唯一出处 —— `readability-identifier-length` 本工程刻意关闭（误报高），所以它**没有配置载体**，
+不适用「同一取值只写一份」。等级仍是 MUST NOT（不是 SHOULD）：它**给得出候选命令**，也**有依据**（与函数行数上限取同一个数，便于记忆）。
+
+```bash
+# 候选：长度 >= 61 的标识符（须人工过滤掉长字符串字面量与生成代码）
+grep -rnE '\b[A-Za-z_][A-Za-z0-9_]{60,}\b' --include='*.h' --include='*.hpp' --include='*.cpp' .
+```
+
+**超过即须先按 `design-granularity.md` 判断该不该拆类型**，而不是继续加长。
 
 ---
 

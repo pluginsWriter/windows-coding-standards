@@ -15,7 +15,7 @@
 
 **因为过去两侧都只设了上限，没有下限。**
 
-- 上限（函数 60 行、类型 300 行、复杂度 15）有数值，好写好查；
+- 上限（函数行数、类型行数、复杂度）有数值，好写好查；
 - **下限（"拆得太碎"）没有任何条目** —— 而它恰恰是 AI 生成代码最常见的形态。
 
 AI 的边际成本为零，所以它倾向于：
@@ -51,18 +51,19 @@ AI 的边际成本为零，所以它倾向于：
 
 ## 2. 上限：体量阈值（由各语言自己的配置承载）
 
-| 项 | 阈值 | C++ 侧载体 | C#/.NET 侧载体 |
-|---|---|---|---|
-| 圈复杂度 / 认知复杂度 | 15（C#）· 25（C++ 认知复杂度） | `.clang-tidy` 的 `readability-function-cognitive-complexity.Threshold` | `CA1502`（内置） |
-| 函数行数 | 60 | `readability-function-size.LineThreshold` | 无内置规则 → SHOULD + 人工 |
-| 类型行数 | 300 | 无工具 → SHOULD + 人工 | 无内置规则 → SHOULD + 人工 |
-| 参数个数 | 6 | `readability-function-size.ParameterThreshold` | `CA1026` 相关 / 人工 |
-| 嵌套深度 | 3–4 | `readability-function-size.NestingThreshold` | 无内置规则 → 人工 |
+| 项 | C++ 侧载体 | C#/.NET 侧载体 |
+|---|---|---|
+| 圈复杂度 / 认知复杂度 | `.clang-tidy` 的 `readability-function-cognitive-complexity.Threshold`（**等级 SHOULD**，理由见 C++ 正文 §5.4） | `CA1502`（内置；阈值配置键名 `[待实测]`） |
+| 函数行数 | `readability-function-size.LineThreshold` | 无内置规则 → SHOULD + 人工 |
+| 类型行数 | 无工具 → SHOULD + 人工 | 无内置规则 → SHOULD + 人工 |
+| 参数个数 | `readability-function-size.ParameterThreshold` | `CA1026` 相关 / 人工 |
+| 嵌套深度 | `readability-function-size.NestingThreshold` | 无内置规则 → 人工 |
 
-> **数值只在各语言自己的配置模板里写一份**（`assets/clang-tidy` / `assets/editorconfig`）。**本文件不复制数值** —— 复制就是下一个漂移源。
+> **有配置载体的取值（C++ 侧这五项）只写一份** —— 权威是 `assets/clang-tidy`，本文件与两侧正文都**不复制数值**。
+> **没有载体的取值（C# 侧四项：圈复杂度 / 函数行数 / 类型行数 / 参数个数）以 C# 正文 §5.3 为唯一出处**，本文件同样不复制。
 > 上表只是"哪一项由谁检查"的索引。
 
-**触发上限之后该怎么办**：见 §3。**超过 300 行不等于必须拆** —— 先过判据。
+**触发上限之后该怎么办**：见 §3。**超过上限不等于必须拆** —— 先过判据。
 
 ---
 

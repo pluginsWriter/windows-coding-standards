@@ -11,3 +11,22 @@ CLM-009	嵌套深度检查在 Windows 工具链有可用实现（具体是哪个
 CLM-010	clang-tidy 结果可转 SARIF 且可跨次运行匹配（partialFingerprints）	research/dec-baseline-sources.md	clang-tidy-sarif 或 IDE 输出通道做最小转换验证	manual	untested		
 CLM-011	PVS-Studio 基线抑制语义：前后行哈希+诊断ID，行移动不重现	research/dec-baseline-sources.md	需许可产品；无产品保持 untested，不得在任何文档里引用为已验证	manual	untested		
 CLM-012	大小写不匹配的 include 在大小写敏感文件系统上直接编译失败	审计设计（跨平台移植风险）	由 scan-macos-traces.sh 的 include_case_mismatch 候选覆盖，agent 分诊后回填	yes	untested		
+CLM-013	dotnet format --verify-no-changes 是否覆盖命名类规则（还是只覆盖格式）	references/csharp-coding-standards.md 附录 D#1	造一处命名违规，跑 dotnet format --verify-no-changes；与只改格式的样本对照	manual	untested		
+CLM-014	行长是否被 IDE0055 强制；max_line_length 的实际作用	references/csharp-coding-standards.md 附录 D#2	写一行 200 字符，跑 dotnet format --verify-no-changes	manual	untested		
+CLM-015	设 EnforceCodeStyleInBuild=true 后 dotnet_diagnostic.*.severity=warning 是否确实在构建期报出；EnforceOnBuild.Never 的例外清单到底有哪些	references/csharp-coding-standards.md 附录 D#3	设 IDE0040 为 warning 后 dotnet build；再对 IDE0003 重复一次，看是否只在 IDE 报	manual	untested		
+CLM-016	IDE0005（未使用 using）在构建期是否上报（已知依赖 GenerateDocumentationFile）	references/csharp-coding-standards.md 附录 D#4	加一个无用 using，跑 dotnet build -warnaserror	manual	untested		
+CLM-017	CA1502 的启用方式与阈值配置键名	references/csharp-coding-standards.md 附录 D#5	dotnet_diagnostic.CA1502.severity = warning + 调阈值，看是否报	manual	untested		
+CLM-018	StyleCop SA1516 与内置规则的重叠清单	references/csharp-coding-standards.md 附录 D#6	引入 StyleCop，对同一文件各跑一次，比对输出交集	manual	untested		
+CLM-019	局部豁免格式检查的正确写法	references/csharp-coding-standards.md 附录 D#7	#pragma warning disable IDE0055 与 // format: off 各试一次	manual	untested		
+CLM-020	csharp_preserve_single_line_blocks/statements 默认值是否为 true（若默认已开，则「必须显式设置」的说法要修正）	references/csharp-coding-standards.md 附录 D#8	不写这两项，观察手写单行块是否被改写	manual	untested		
+CLM-021	BasedOnStyle: Microsoft 的实际预设取值（IndentWidth/ColumnLimit/IndentCaseLabels/BreakBeforeBraces/PointerAlignment/AccessModifierOffset/AllowShortFunctionsOnASingleLine）	references/cpp-coding-standards.md 附录 D#D1	clang-format --dump-config -style=Microsoft 读预设；与 assets/clang-format 的三处偏离对照	manual	untested		
+CLM-022	clang-format --dry-run --Werror 在未格式化文件上是否非 0 退出	references/cpp-coding-standards.md 附录 D#D2	对同一文件：格式化前 --dry-run --Werror 应 exit 1，格式化后应 exit 0	manual	untested		
+CLM-023	SeparateDefinitionBlocks 是否强制成员间空行（Always）	references/cpp-coding-standards.md 附录 D#D3	夹具写两个紧贴的成员函数与 private:，跑 clang-format 看是否插入空行	manual	untested		
+CLM-024	clang-tidy 默认检查集的精确边界（出厂默认启用条数 vs 本模板簇配置启用条数）	references/cpp-coding-standards.md 附录 D#D4	干净空目录跑 clang-tidy --dump-config --checks='*' 数 enabled；与本模板目录下的结果分别记录	manual	untested		
+CLM-025	readability-identifier-naming 空 CheckOptions 时是否真的不报	references/cpp-coding-standards.md 附录 D#D5	同一命名违规夹具：空 CheckOptions 应 0 报，本模板配置应报出	manual	untested		
+CLM-026	readability-function-size / -cognitive-complexity 的阈值键名与出厂默认值（四个键默认 none / 认知复杂度默认 25）	references/cpp-coding-standards.md 附录 D#D6	干净空目录 clang-tidy --dump-config 看这五个键的默认值（勿在模板目录里跑，会被本地 .clang-tidy 污染）	manual	untested		
+CLM-027	-Wdocumentation 是否只查格式、不查缺失	references/cpp-coding-standards.md 附录 D#D7	三例夹具：注释完好应 0 报、@param 名写错应报、完全无注释应 0 报	manual	untested		
+CLM-028	Doxygen 的 WARN_IF_UNDOCUMENTED 能否作为强制手段	references/cpp-coding-standards.md 附录 D#D8	须在装了 Doxygen 的机器上做最小 Doxyfile 试验（本机无 doxygen）	manual	untested		
+CLM-029	clang-tidy 的 misra-* 簇覆盖多少条 MISRA C++:2023	references/cpp-coding-standards.md 附录 D#D9	clang-tidy --list-checks --checks='-*' 搜 misra；再试 --checks='-*,misra-cpp2023-*' 看是否报 no checks enabled	manual	untested		
+CLM-030	WHCP 当前是否仍要求汇总 Code Analysis / SDV 日志	references/cpp-coding-standards.md 附录 D#D10	属文档核对（非工具行为）：查当前 WDK 版的《Creating a driver verification log》	manual	untested		
+CLM-031	SortIncludes / IncludeBlocks 的实际生效值（21.x 里 SortIncludes 已成嵌套结构）	references/cpp-coding-standards.md 附录 D#D11	乱序 include 夹具：默认应原样保留；改成 CaseSensitive + Regroup 后应立刻重排	manual	untested		

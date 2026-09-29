@@ -47,6 +47,9 @@
 - 证据门：evidence 列必须指到本次 run 目录的具体文件（必要时附行号）；`文件:行号` 或 `命令+输出` 二选一起码。
 - 归因门：attribution_artifact 列写 skill 具体工件（如「DEC计划 T-DEC-26」「skill README §x」）；写不出的，fix_target 只能是 project 或 none。
 - 差异门：expected 与 actual 两列必须都填且确实不同；"skill 说会拦、实际也拦了"不是 finding。
+  - **C 类例外（覆盖缺口）**：C 类的 `expected` 取自**目的层 `../references/design-purpose.md`**，**不取自「skill 已有声明」**；
+    `actual` 写「规则层无对应条目」并附检索命令与输出。**目的层也没有依据 ⇒ `fix_target=none`（记录待议，不得补规则）。**
+    不加这条例外，C 类会被门 4 结构性挡下 —— 详见 `../README.md` 的「C 类专用口径」。
 - 影响门：impact 列写"不改会发生什么"（谁在哪一步被误导）。
 
 ## 3. A–F 分类与 fix_target 对应
@@ -55,12 +58,19 @@
 | --- | --- | --- |
 | A | skill 声明错误 | skill（指明文件+章节） |
 | B | skill 命令/脚本真机失效 | skill（脚本/命令） |
-| C | 覆盖缺口 | skill（新增条目）或 none（记录待议） |
+| C | 覆盖缺口 | skill（新增条目，**仅当目的层有依据**）或 none（目的层也无依据 → 记录待议） |
 | D | 阈值失真 | skill（E 系列实验，不可直接改数） |
 | E | 执行性缺口 | skill（降级 SHOULD / 给替代） |
 | F | 环境假设破产 | skill（前置说明/环境检测）或 project（环境要补装） |
 
 工程自身问题（归因不到 skill）：category 留 C 但 fix_target=project，单独成行不混入 skill 修复。
+
+**C 类的两条操作纪律**（与 A/B/D/E/F 不同，别照抄其它类的填法）：
+
+1. **C 类的 `expected` 只能来自目的层** `../references/design-purpose.md`（哪一条目标、哪个病灶），
+   **不许写成「这条规范应该有」** —— 那是"我觉得"，不是依据。目的层里找不到 ⇒ `fix_target=none`。
+2. **证据允许「计数 + 抽样」两种形态，取其一**：计数 = 检索命令证明规则层零命中（命令与输出落盘）；
+   抽样 = ≥2 个真机实例。**两者都给不出 ⇒ 不算 finding**，只进「待人工复核」清单。
 
 ## 4. findings.tsv 字段速查
 
@@ -72,7 +82,7 @@
 
 1. **去噪**：按 §6 误报源表先排除明显误报（排除的计数留档，不逐条进 findings）。
 2. **定性**：看上下文判断是活代码 / 死分支 / 纯注释线索；`#ifdef __APPLE__` 分支在 Windows 下的可达性属静态推断，confidence 标 infer。
-3. **成案**：确属 macOS 遗留且 skill 应管而没管的 → C 类 finding（归因门：skill 缺哪条）；skill 有规则但没拦住的 → B 类。
+3. **成案**：确属 macOS 遗留且 skill 应管而没管的 → C 类 finding（归因门：skill 缺哪条；`expected` 按「C 类专用口径」取自目的层，不是"我觉得应该有"）；skill 有规则但没拦住的 → B 类。
 4. **保守原则**：拿不准的不进 findings，进「待人工复核」清单并写明缺什么证据。
 
 ## 6. 已知误报源（分诊参考）

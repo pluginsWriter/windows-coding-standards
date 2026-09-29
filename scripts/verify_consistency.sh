@@ -73,7 +73,11 @@ CLANG_TIDY="$SKILL_DIR/assets/clang-tidy"
 # --- 跨语言（判据层共享，检测命令分语言）------------------------------------
 GRANULARITY="$SKILL_DIR/references/design-granularity.md"
 CHANGE_DISC="$SKILL_DIR/references/change-discipline.md"
-SHARED_JUDGMENT="$GRANULARITY $CHANGE_DISC"
+# 目的层：本仓库此前**从未把设计目的完整写下过**，而"没有目的就没有缺口"——
+# 它不在 SHARED_JUDGMENT 里的话，第 15 节不会核对"两侧是否都还在用它"，
+# 于是它可以被某一侧静默弃用而没人发现（与本文件存在的理由同源）。
+DESIGN_PURPOSE="$SKILL_DIR/references/design-purpose.md"
+SHARED_JUDGMENT="$DESIGN_PURPOSE $GRANULARITY $CHANGE_DISC"
 
 FAIL=0
 WARN=0
@@ -371,6 +375,85 @@ if [ "$PD_ROWS" -gt 0 ]; then
   pass "C++ 待实测条目已编号登记（$PD_ROWS 条，D 前缀）"
 else
   fail "C++ 正文附录 D 里推不出待实测条目 —— 「已实测 / 待实测」的边界必须显式登记"
+fi
+
+# ---------- 附录 D 的「已销 / 未销」两段（E3，2026-09-28）----------
+# 动因：标题自称「验证状态与待实测清单」，就必须有人核对**状态**这一维。
+# 两段的**段标题自带条数**（`### 已销（9 条…）`），而**正文别处不许再抄一遍** ——
+# 抄出来的副本必然漂（本项目已栽过：计划书写"节号已排到 15"而脚本当时已是 18 节）。
+# 所以这里的判据是「段标题的数字 == 段内实际行数」，外加「两段之和 == D 行总数」。
+#
+# ⚠️ 数「子段内的行」不能用 count_rows_in_section —— 它只在 `## ` 上重置。
+# 而 `## ` 的正则**不匹配** `### x`（`^##` 后要求一个空格，`###` 的第三位是 `#`），
+# 所以 `###` 子标题既不会误重置、也必须自己台阶式跟踪。下面这个函数就是干这个的。
+#
+# ⚠️ **awk 的变量名不能取内建函数名**：这里原先把子段模式叫 `sub`，而 `sub` 是 awk 内建函数
+#    ⇒ awk 把 `cur ~ sub` 里的 `sub` 当函数引用解析，直接 `syntax error ... cur ~ sub >>> && <<<`，
+#    函数**静默返回空串**，下游三处断言全部误报。凡内建名（sub / gsub / match / index /
+#    length / split / sprintf …）一律不得作变量名。
+count_rows_in_subsection() {   # $1=文件 $2=## 节名片段 $3=### 子段名片段 $4=行 pattern
+  awk -v want="$2" -v subsec="$3" -v pat="$4" '
+    /^## /  { sec = ($0 ~ want) ? 1 : 0; cur = ""; next }
+    /^### / { if (sec) cur = $0; next }
+    sec && cur ~ subsec && $0 ~ pat { n++ }
+    END { print n + 0 }
+  ' "$1"
+}
+
+# 同一子段内的行按**首列编号**列出（空格分隔、已排序）—— 供「点名清单」类比对使用
+list_ids_in_subsection() {     # $1=文件 $2=## 节名片段 $3=### 子段名片段
+  awk -v want="$2" -v subsec="$3" '
+    /^## /  { sec = ($0 ~ want) ? 1 : 0; cur = ""; next }
+    /^### / { if (sec) cur = $0; next }
+    sec && cur ~ subsec && /^[|]/ {
+      n = split($0, a, "|")
+      gsub(/^[[:space:]]+|[[:space:]]+$/, "", a[2])
+      if (a[2] ~ /^[A-Za-z]+-?[0-9]+$/) print a[2]
+    }
+  ' "$1" | sort | tr '\n' ' '
+}
+
+PD_DONE=$(count_rows_in_subsection "$CPP_MAIN" '附录 D' '^### 已销' '^[|] D[0-9]+ [|]')
+PD_UNDONE=$(count_rows_in_subsection "$CPP_MAIN" '附录 D' '^### 未销' '^[|] D[0-9]+ [|]')
+PD_DONE_DECL=$(grep -oE '^### 已销（[0-9]+ 条' "$CPP_MAIN" | grep -oE '[0-9]+' | head -1)
+PD_UNDONE_DECL=$(grep -oE '^### 未销（[0-9]+ 条' "$CPP_MAIN" | grep -oE '[0-9]+' | head -1)
+
+if [ -z "$PD_DONE_DECL" ] || [ -z "$PD_UNDONE_DECL" ]; then
+  fail "C++ 附录 D 缺「### 已销（N 条…）」/「### 未销（N 条…）」段标题 —— 状态维度没有可核对的声明"
+else
+  [ "$PD_DONE_DECL" = "$PD_DONE" ] \
+    && pass "C++ 附录 D「已销」段：标题数字与实际行数一致（${PD_DONE}）" \
+    || fail "C++ 附录 D「已销」段数字不一致：段标题写 ${PD_DONE_DECL} 条，段内实际 ${PD_DONE} 行"
+  [ "$PD_UNDONE_DECL" = "$PD_UNDONE" ] \
+    && pass "C++ 附录 D「未销」段：标题数字与实际行数一致（${PD_UNDONE}）" \
+    || fail "C++ 附录 D「未销」段数字不一致：段标题写 ${PD_UNDONE_DECL} 条，段内实际 ${PD_UNDONE} 行"
+  if [ $((PD_DONE + PD_UNDONE)) -eq "$PD_ROWS" ]; then
+    pass "C++ 附录 D 两段之和 == D 行总数（${PD_DONE} + ${PD_UNDONE} = ${PD_ROWS}）"
+  else
+    fail "C++ 附录 D 分段漏行：已销 ${PD_DONE} + 未销 ${PD_UNDONE} ≠ D 行总数 ${PD_ROWS}（有行没被归段）"
+  fi
+fi
+
+# 同一事实在 README 里也声明了一次 —— 跨文件核对，否则它就是下一个漂移点
+RM_DONE_DECL=$(grep -oE '待实测\*\*已销 [0-9]+ 条|待实测已销 [0-9]+ 条' "$README" | grep -oE '[0-9]+' | head -1)
+if [ -z "$RM_DONE_DECL" ]; then
+  warn "README 里推导不出「已销 N 条」的声明，无法与 C++ 附录 D 比对"
+elif [ "$RM_DONE_DECL" = "$PD_DONE" ]; then
+  pass "README 的「已销 ${RM_DONE_DECL} 条」与 C++ 附录 D 一致"
+else
+  fail "README 与 C++ 附录 D 的已销条数不一致：README=${RM_DONE_DECL}，附录 D 实际=${PD_DONE}"
+fi
+
+# README 点名的「只剩 D8 / D10」也必须与实际未销段一致（点名少了 = 漏报，多了 = 谎报）
+# 两侧都归一到「排序 + 空格分隔」再比 —— 比的是集合，不是书写顺序。
+RM_UNDONE_IDS=$(grep -oE '只剩[^。]*' "$README" | grep -oE 'D[0-9]+' | sort | tr '\n' ' ')
+PD_UNDONE_IDS=$(list_ids_in_subsection "$CPP_MAIN" '附录 D' '^### 未销')
+if [ -z "$RM_UNDONE_IDS" ]; then
+  warn "README 里推导不出「只剩 D…」的点名，无法与未销段比对"
+elif [ "$RM_UNDONE_IDS" = "$PD_UNDONE_IDS" ]; then
+  pass "README 点名的未销条目与实际一致（${PD_UNDONE_IDS% }）"
+else
+  fail "README 点名的未销条目与实际不一致：README=「${RM_UNDONE_IDS% }」实际=「${PD_UNDONE_IDS% }」"
 fi
 
 # ---------------------------------------------------------------------------
@@ -843,6 +926,493 @@ else
   fail "节编号不连续或有重复 —— 正文里「第 N 节」的交叉引用会指错"
 fi
 fi  # SELFTEST_NESTED
+
+# ---------------------------------------------------------------------------
+hdr 19 "语言判定：SKILL.md / README 的「后缀 → 走哪一套」表必须与探测器逐项一致"
+# 起因（2026-09-28，用户明示）：语言判定必须**内联进"写这一个文件"的动作**，不能是"先跑一次"的独立步骤
+# —— 所以「看后缀就知道走哪一套」的那张表是判定的**唯一依据**，不是说明书。
+# 它与 scripts/detect_language.sh 的 CS_EXT / NATIVE_EXT 一旦漂移，后果是
+# **"按表判成 C++、按脚本判成 C#"** —— 最难被发现的一类不一致（两侧都"看着对"）。
+# 期望值从脚本推导，不写第二份硬编码。判据的抽取只认**表格行**，
+# 故散文里出现的 `*.csproj` / `*.vcxproj`（工程级强标记，不是源码后缀）不会混进来。
+if [ -f "$DETECT" ]; then
+  DET_SUF=$(mktemp "${TMPDIR:-/tmp}/wcs-detsuf-XXXXXX")
+  grep -E '^(CS_EXT|NATIVE_EXT)=' "$DETECT" | grep -oE '\*\.[A-Za-z+]+' | sort -u > "$DET_SUF"
+  for pair in "SKILL.md:$SKILL_MD" "README.md:$README"; do
+    name=${pair%%:*}; file=${pair#*:}
+    TBL_SUF=$(mktemp "${TMPDIR:-/tmp}/wcs-tblsuf-XXXXXX")
+    grep -E '^\|[[:space:]]*`\*\.[A-Za-z0-9+]' "$file" 2>/dev/null \
+      | grep -oE '\*\.[A-Za-z0-9+]+' | sort -u > "$TBL_SUF"
+    if [ ! -s "$TBL_SUF" ]; then
+      fail "$name 里找不到「后缀 → 走哪一套」表 —— 语言判定又退化成\"必须先跑一遍命令\""
+    else
+      SUF_MISS=$(comm -23 "$DET_SUF" "$TBL_SUF" | tr '\n' ' ')
+      SUF_EXTRA=$(comm -13 "$DET_SUF" "$TBL_SUF" | tr '\n' ' ')
+      if [ -z "$SUF_MISS" ] && [ -z "$SUF_EXTRA" ]; then
+        pass "$name 的后缀表与探测器逐项一致（$(wc -l < "$DET_SUF" | tr -d ' ') 个后缀）"
+      else
+        [ -n "$SUF_MISS" ] && fail "$name 的后缀表漏了探测器认下的后缀：${SUF_MISS}—— 这些文件会被判错侧"
+        [ -n "$SUF_EXTRA" ] && fail "$name 的后缀表多出探测器不认的后缀：${SUF_EXTRA}—— 看似分流，实由默认值兜底"
+      fi
+    fi
+    rm -f "$TBL_SUF"
+  done
+  rm -f "$DET_SUF"
+fi
+
+# ---------------------------------------------------------------------------
+hdr 20 "G1 病灶索引表：两侧各一张、前两列逐行一致，第四列的归属都指得到东西"
+# 起因（2026-09-28，D-2 落槌后）：设计目的 G1 的「机器可查那一半」必须真的机械化 ——
+# 否则那张表只是第二份"写下来但没人守"的文件（本工程已吃过这个亏：目的层此前从未被完整写下）。
+# 三条断言：
+#   ① 两侧都能识别出病灶表，且**行数相同**（病灶类目跨语言共享，不该只有一侧少一类）。
+#   ② 前两列（病灶名 + 特征形态）**逐行相同** —— 那是「病」本身；第三、四列**必须分侧**
+#      （工具 / 编号体系 / 注释载体都不同），故不参与逐行比对。
+#   ③ 第四列每行都要**指得到东西**：一个能在该侧目录里检索到的编号 / 一份判据文件的节 /
+#      或明写「本侧不治」（显式出口，仿第 16 节的「反例」约定）。**留空格 = FAIL**。
+# 期望值一律从两份文件互相推导，不写第二份硬编码（行数、类名都不硬写）。
+lesion_rows() {   # $1=side main file → 每行输出「病灶名 \t 特征形态 \t 第四列」
+  awk '
+    /^\|/ && index($0, "病灶") && index($0, "机器能否拦住") { t = 1; next }
+    t && /^\|/ {
+      n = split($0, a, "|")
+      for (i = 2; i <= n - 1; i++) { gsub(/^[[:space:]]+|[[:space:]]+$/, "", a[i]) }
+      # ⚠️ 必须跳过 Markdown 的分隔行（`|---|---|`）—— 不跳会被当成一行"病灶"，
+      #    于是"行数""归属"两处同时误报（2026-09-28 实测：报出 7 行、且剩一行第四列为 `---`）。
+      if (a[2] ~ /^-+$/) { next }
+      print a[2] "\t" a[3] "\t" a[n-1]
+      next
+    }
+    t { exit }
+  ' "$1"
+}
+
+# 第四列的归属是否指得到东西。两侧用同一套检查：C++ 行里不会出现 `#nn`，反之亦然。
+lesion_owner_check() {   # $1=表文件（TSV） $2=侧名
+  local bad="" nm feat own x num hit
+  while IFS=$'\t' read -r nm feat own; do
+    [ -z "$nm" ] && continue
+    printf '%s' "$own" | grep -qE '本侧不治|本规范不治' && continue
+    hit=0
+    for x in $(printf '%s' "$own" | grep -oE 'CPP-[0-9]+' || true); do
+      grep -qE "^[|] ${x} [|]" "$CPP_CATALOG" || bad="${bad}        ${nm} → ${x} 在 C++ 缺陷目录里检索不到\n"
+      hit=1
+    done
+    for x in $(printf '%s' "$own" | grep -oE '#[0-9]+' || true); do
+      num=${x#\#}
+      grep -qE "^[|] ${num} [|]" "$CATALOG" || bad="${bad}        ${nm} → ${x} 在 C#/.NET 缺陷目录里检索不到\n"
+      hit=1
+    done
+    printf '%s' "$own" | grep -qE '(design-granularity|change-discipline|design-purpose)\.md' && hit=1
+    [ "$hit" -eq 0 ] && bad="${bad}        ${nm} → 第四列既无编号、也无判据文件引用，且未写「本侧不治」\n"
+  done < "$1"
+  if [ -z "$bad" ]; then
+    pass "${2} 病灶表：每一行的归属都指得到东西（$(wc -l < "$1" | tr -d ' ') 行）"
+  else
+    fail "${2} 病灶表有行的归属指不到东西 —— 那就是「表里有、条文里没有」的空格："
+    printf '%b' "$bad"
+  fi
+}
+
+LESION_CPP=$(mktemp "${TMPDIR:-/tmp}/wcs-lesion-cpp-XXXXXX")
+LESION_CS=$(mktemp "${TMPDIR:-/tmp}/wcs-lesion-cs-XXXXXX")
+lesion_rows "$CPP_MAIN" > "$LESION_CPP"
+lesion_rows "$MAIN" > "$LESION_CS"
+if [ ! -s "$LESION_CPP" ] || [ ! -s "$LESION_CS" ]; then
+  fail "病灶索引表缺失或表头不可识别（表头行须同时含「病灶」与「机器能否拦住」）—— G1 的机器可查那一半又空了"
+else
+  N_CPP=$(wc -l < "$LESION_CPP" | tr -d ' ')
+  N_CS=$(wc -l < "$LESION_CS" | tr -d ' ')
+  if [ "$N_CPP" = "$N_CS" ]; then
+    pass "两侧病灶表行数一致（${N_CPP} 行）"
+  else
+    fail "两侧病灶表行数不一致：C++ ${N_CPP} 行 / C#/.NET ${N_CS} 行 —— 类目跨语言共享，不该只有一侧少"
+  fi
+  cut -f1,2 "$LESION_CPP" > "$LESION_CPP.n"
+  cut -f1,2 "$LESION_CS" > "$LESION_CS.n"
+  LDIFF=$(diff "$LESION_CPP.n" "$LESION_CS.n" 2>&1 | head -12 || true)
+  if [ -z "$LDIFF" ]; then
+    pass "两侧的「病灶 / 特征形态」两列逐行一致（只有第三、四列分侧）"
+  else
+    fail "两侧病灶表的「病灶 / 特征形态」不一致 —— 这两列是「病」本身，必须共享："
+    printf '%s\n' "$LDIFF" | sed 's/^/        /'
+  fi
+  lesion_owner_check "$LESION_CPP" "C++"
+  lesion_owner_check "$LESION_CS" "C#/.NET"
+fi
+rm -f "$LESION_CPP" "$LESION_CS" "$LESION_CPP.n" "$LESION_CS.n"
+
+# ---------------------------------------------------------------------------
+hdr 21 "体量阈值：取值只有一处（模板），正文 / 摘要 / 判据层不得复制数值"
+# 起因（2026-09-28，D-1 落槌）：实测认知复杂度的阈值 `25` **就是 clang-tidy 的出厂默认值**
+# —— 本工程从未选择过它。这暴露出两件事：① 取值的副本散在正文 / 判据层 / 摘要里，
+# 谁也说不清哪份是准的；② 一个"抄来的默认值"被标成了 MUST。
+# 本节只治①；② 由正文 §2 的元规则（MUST 必须「可检查 **且** 有依据」）承载。
+# 四条断言，全部可复核：
+#   A. 模板必须**恰好**声明那 5 个体量键（每键出现 1 次）：少一个 = 该检查静默不生效；多一处 = 有了第二份取值。
+#   B. 除模板外，交付面不得把阈值写成「键名 = 数值」／「键名: 数值」的赋值式。
+#   C. C++ 正文 §5.4 的**表行**内不得出现数字（表只回答「等级 / 依据 / 由谁检查」）。
+#      ⚠️ 比对前必须**剥掉 `§x.y` 交叉引用** —— 那是小节号不是阈值；不剥就会把说明文字本身报成违规
+#         （本脚本第 14 / 16 / 17 / 19 节都栽在"扫到自己讲解该坑的那段文字"上，这是第 5 次）。
+#   D. C# 正文 §5.3 的体量表**带数值**，故必须显式声明"本侧没有配置载体" ——
+#      否则它就成了第二份没人声明、也没人核对的来源。
+THR_BAD=""
+for k in readability-function-size.LineThreshold \
+         readability-function-size.ParameterThreshold \
+         readability-function-size.NestingThreshold \
+         readability-function-size.BranchThreshold \
+         readability-function-cognitive-complexity.Threshold; do
+  n=$(grep -cF -- "$k" "$CLANG_TIDY" || true)
+  [ "$n" = "1" ] || THR_BAD="${THR_BAD}        ${k} 在模板里出现 ${n} 次（必须恰好 1 次）\n"
+done
+if [ -z "$THR_BAD" ]; then
+  pass "assets/clang-tidy 是 5 个体量阈值键的唯一声明处（各 1 次）"
+else
+  fail "体量阈值键在模板里的声明数不对（少一处 = 静默不生效；多一处 = 第二份取值）："
+  printf '%b' "$THR_BAD"
+fi
+
+THR_DUPE=$(grep -nE '(LineThreshold|ParameterThreshold|NestingThreshold|BranchThreshold|cognitive-complexity\.Threshold)[[:space:]]*[:=][[:space:]]*"?[0-9]' \
+  "$SKILL_MD" "$README" "$CPP_MAIN" "$CPP_CATALOG" "$CPP_NAMING" \
+  "$GRANULARITY" "$CHANGE_DISC" "$DESIGN_PURPOSE" 2>/dev/null || true)
+if [ -z "$THR_DUPE" ]; then
+  pass "正文 / 摘要 / 判据层里没有「阈值键名 = 数值」的赋值式副本"
+else
+  fail "阈值取值出现在模板之外 —— 取值只能有一份（正文 §1.1）："
+  printf '%s\n' "$THR_DUPE" | sed 's/^/        /'
+fi
+
+SEC54=$(awk '/^### 5\.4/{s=1;next} s&&/^### /{s=0} s' "$CPP_MAIN" \
+        | sed -E 's/§[0-9]+(\.[0-9]+)*//g' | grep -nE '^\|.*[0-9]' || true)
+if [ -z "$SEC54" ]; then
+  pass "C++ 正文 §5.4 的表内无裸数值（表只回答「等级 / 依据 / 由谁检查」）"
+else
+  fail "C++ 正文 §5.4 的表行里又出现了数值 —— 取值只能写在 assets/clang-tidy："
+  printf '%s\n' "$SEC54" | sed 's/^/        /'
+fi
+
+SEC53=$(awk '/^### 5\.3/{s=1;next} s&&/^### /{s=0} s' "$MAIN")
+if printf '%s' "$SEC53" | grep -qE '^\|.*[0-9]'; then
+  if printf '%s' "$SEC53" | grep -q '没有配置载体'; then
+    pass "C# 正文 §5.3 带数值且已声明「本侧没有配置载体」（它是该侧四项的唯一出处）"
+  else
+    fail "C# 正文 §5.3 的表带数值，却没声明该侧没有配置载体 —— 那会变成一份没人声明的第二来源"
+  fi
+else
+  warn "C# 正文 §5.3 的体量表已不再写数值 —— 请确认这四项的取值另有出处并已登记"
+fi
+
+# ---------------------------------------------------------------------------
+hdr 22 "引用可解析：正文里的 §X.Y 必须指得到真实标题（E2，2026-09-28）"
+#
+# 动因：两侧正文与跨语言判据文件之间到处用 §X.Y 互引，**从来没有一处被核对过**。
+# 标题一改名，引用就变成「看起来指得到、其实指空」—— 与 §7.3 反复强调的假绿同形。
+#
+# 【归属规则】一个 §X.Y 指向哪个文件，看**同一行内、它前面最后一次出现的 `xxx.md`**，
+# 但**只有**当 `.md` 与 `§` 之间只剩空格 / `*` / 反引号时才算「紧跟」；列表项
+# （`§1.4 / §5.6`）继承前一项的归属。
+# 反例（两侧头部「配套文件清单」里真实存在，试跑时正是被它骗了一次）：
+#     `design-granularity.md` —— …（臃肿 / 过度拆分，§5.4 与 §6.3 引用它）
+# 这里的 §5.4 / §6.3 说的是**本文件**的小节（"本文件在哪几节引用了它"），不是那个文件的小节。
+# 若按「最后一个 .md」无条件归属，本文件的引用会被整批误判成跨文件引用。
+#
+# ⚠️ **判据要比计划里那版更严。** 计划原拟 `grep -qE "^#{2,4} ${ref}([^0-9]|$)"`，
+#    而该模式会让 `§3` **命中 `### 3.1`**（`3` 之后是 `.`，而 `.` 属于 `[^0-9]`）
+#    ⇒ 它**过不了计划自己写的负向测试**（"只写前缀 §3 而正文只有 `### 3.1` 必须 FAIL"）。
+#    本节的判据**不走「前缀 + 边界字符」**，而是把标题编号抽成一个**集合**再精确相等：
+#        `## 3. 格式` → `3`      `### 3.1 取值` → `3.1`
+#    `§3` 与 `3.1` 在集合里**天然不相等**，前缀混同从根上不成立。
+#    实测：只含 `### 3.1` 的夹具里，`§3` **不**命中（计划那版会命中 = 假绿），`§3.1` 命中。
+
+# 抽出文件里的全部 §X.Y 引用并判定归属。
+# 输出三列：目标文件 <TAB> 引用号 <TAB> 本行点到的 .md（逗号分隔，可为空）
+sec_refs_of() {
+  awk -v self="$2" '
+    {
+      line = $0
+      md_n = 0; mdlist = ""
+      p = line; off = 0
+      while (match(p, /[A-Za-z0-9_.-]+\.md/)) {
+        md_n++
+        md_e[md_n]  = off + RSTART + RLENGTH - 1
+        md_nm[md_n] = substr(p, RSTART, RLENGTH)
+        mdlist = (mdlist == "" ? md_nm[md_n] : mdlist "," md_nm[md_n])
+        off += RSTART + RLENGTH - 1
+        p = substr(p, RSTART + RLENGTH)
+      }
+      pos = 0; prev_target = self; prev_end = 0
+      while (1) {
+        if (!match(substr(line, pos + 1), /§[0-9]+(\.[0-9]+)*/)) break
+        mstart = pos + RSTART; mlen = RLENGTH
+        matched = substr(line, mstart, mlen)
+        ref = "?"
+        # ⚠️ 不能写 substr(matched, 2)：`§` 在 UTF-8 里是 **2 字节**，
+        #    在 LC_ALL=C 下按字节切片会从字符中间切开，ref 直接变成空串。
+        #    对匹配段再取一次 ASCII 的数字/句点即可。
+        if (match(matched, /[0-9]+(\.[0-9]+)*/)) ref = substr(matched, RSTART, RLENGTH)
+        tgt = ""
+        for (k = 1; k <= md_n; k++)
+          if (md_e[k] < mstart) {
+            gap = substr(line, md_e[k] + 1, mstart - md_e[k] - 1)
+            if (gap ~ /^[ \t*`]*$/) tgt = md_nm[k]
+          }
+        if (tgt == "" && prev_end > 0) {
+          g2 = substr(line, prev_end + 1, mstart - prev_end - 1)
+          if (g2 ~ /^[ \t]*[\/、][ \t]*\**[ \t]*$/) tgt = prev_target
+        }
+        if (tgt == "") tgt = self
+        key = tgt SUBSEP ref
+        if (!(key in seen)) { seen[key] = 1; printf "%s\t%s\t%s\n", tgt, ref, mdlist }
+        prev_target = tgt; prev_end = mstart + mlen - 1
+        pos = mstart + mlen - 1
+      }
+    }
+  ' "$1"
+}
+
+# 取一份文件里所有小节标题的**编号集合**（空格分隔）：
+#   `## 3. 格式` → `3`；`### 3.1 基础风格` → `3.1`；`#### 1.4.1 x` → `1.4.1`
+# `[.]?` 吃掉 `## N. ` 的那个句点，再统一剥掉行首 `#` 与尾随句点。
+sec_ids_of() {
+  grep -oE '^#{2,4} [0-9]+(\.[0-9]+)*[.]?' "$1" | sed -E 's/^#+ //; s/[.]$//' | tr '\n' ' '
+}
+
+# ⚠️ 各文件的编号集合**只读一次**：56 处引用若每处都起一个 grep，实测 ~5 秒；
+#    而 §18 会把本脚本**再整体跑一遍**，这份开销直接翻倍。
+SEC_IDS_CS=$(sec_ids_of "$MAIN")
+SEC_IDS_CPP=$(sec_ids_of "$CPP_MAIN")
+SEC_IDS_NAMING=$(sec_ids_of "$CPP_NAMING")
+SEC_IDS_GRAN=$(sec_ids_of "$GRANULARITY")
+SEC_IDS_CHANGE=$(sec_ids_of "$CHANGE_DISC")
+SEC_IDS_PURPOSE=$(sec_ids_of "$DESIGN_PURPOSE")
+
+sec_ids_for() {   # $1=目标文件名 → 该文件的小节编号集合
+  case "$1" in
+    csharp-coding-standards.md)  printf '%s' "$SEC_IDS_CS" ;;
+    cpp-coding-standards.md)     printf '%s' "$SEC_IDS_CPP" ;;
+    cpp-naming-antipatterns.md)  printf '%s' "$SEC_IDS_NAMING" ;;
+    design-granularity.md)       printf '%s' "$SEC_IDS_GRAN" ;;
+    change-discipline.md)        printf '%s' "$SEC_IDS_CHANGE" ;;
+    design-purpose.md)           printf '%s' "$SEC_IDS_PURPOSE" ;;
+    *)                           sec_ids_of "$SKILL_DIR/references/$1" ;;
+  esac
+}
+
+sec_in() { case " $1 " in *" $2 "*) return 0 ;; esac; return 1; }   # $1=集合 $2=编号
+
+SEC_TOTAL=0
+SEC_BAD=""
+SEC_AMB=""
+for sec_pair in "$MAIN:csharp-coding-standards.md" "$CPP_MAIN:cpp-coding-standards.md"; do
+  sec_file=${sec_pair%%:*}
+  sec_self=${sec_pair##*:}
+  while IFS="$(printf '\t')" read -r sec_tgt sec_ref sec_mds; do
+    [ -z "$sec_ref" ] && continue
+    SEC_TOTAL=$((SEC_TOTAL + 1))
+    if [ "$sec_tgt" = "$sec_self" ]; then sec_tf="$sec_file"; else sec_tf="$SKILL_DIR/references/$sec_tgt"; fi
+    if [ ! -f "$sec_tf" ]; then
+      SEC_BAD="${SEC_BAD}        §${sec_ref} 归属到 ${sec_tgt}，但该文件不存在（${sec_self}）\n"
+      continue
+    fi
+    sec_in "$(sec_ids_for "$sec_tgt")" "$sec_ref" && continue
+    # 目标里没有：再看同一行点到的**其它** .md 里有没有 ——
+    # 有的话只是「归属没写明」，不该判死（判死会变成误报，见上面 design-granularity 那条反例）。
+    sec_alt=""
+    sec_oldifs=$IFS; IFS=,
+    for sec_c in $sec_mds; do
+      [ "$sec_c" = "$sec_tgt" ] && continue
+      [ -f "$SKILL_DIR/references/$sec_c" ] || continue
+      sec_in "$(sec_ids_for "$sec_c")" "$sec_ref" && sec_alt="${sec_alt}${sec_alt:+ }${sec_c}"
+    done
+    IFS=$sec_oldifs
+    if [ -n "$sec_alt" ]; then
+      SEC_AMB="${SEC_AMB}        §${sec_ref}：${sec_tgt} 里没有，但同一行的 ${sec_alt} 里有 —— 归属没写明，锚点改名时会静默漂\n"
+    else
+      SEC_BAD="${SEC_BAD}        §${sec_ref} → ${sec_tgt} 里没有这个标题（${sec_self} 的引用指空了）\n"
+    fi
+  done <<EOF
+$(sec_refs_of "$sec_file" "$sec_self")
+EOF
+done
+
+if [ -n "$SEC_BAD" ]; then
+  fail "有 §X.Y 引用指不到任何标题（共扫过 ${SEC_TOTAL} 处引用）："
+  printf '%b' "$SEC_BAD"
+else
+  pass "两侧正文的 §X.Y 引用全部可解析（共扫过 ${SEC_TOTAL} 处引用）"
+fi
+if [ -n "$SEC_AMB" ]; then
+  warn "有 §X.Y 引用的归属没写明（不判死，但建议补上文件名）："
+  printf '%b' "$SEC_AMB"
+fi
+
+# ---------------------------------------------------------------------------
+hdr 23 "审计层与规则层的通路（E6 / E7，2026-09-28）"
+# 动因：五道门全是**证伪型**，门 4 要求 finding 填「skill 预期 vs 实际发生」，
+# 而 C 类（覆盖缺口）的字面意思就是"skill 里没有这条" ⇒ 它天然填不出 expected，
+# **被门 4 结构性挡下**。可 C 类又是唯一能回答"规则层缺了哪几条"的类别
+# （A/B/D/E/F 都在"已有声明或既有规则"内部挑错）。于是设计目的 **G5**（审计层能发现
+# 规则层缺口）此前根本不成立 —— 不是没做，是**结构上没有通路**。
+# 本节机械守住两件落地：
+#   ① C 类口径必须写到，且必须把 expected 的来源钉在**目的层**文件上（否则又变成"我觉得应该有"）；
+#   ② claims 必须接上两侧正文附录 D：**逐侧条数对得上** + 编号不断号 + 每行字段数一致。
+
+AUDIT_README="$SKILL_DIR/audit/README.md"
+AUDIT_BRIEF="$SKILL_DIR/audit/briefs/agent-brief.md"
+CLAIMS="$SKILL_DIR/audit/templates/claims-checklist.tsv"
+
+# ---------- ① C 类专用口径 ----------
+for aud_pair in "$AUDIT_README:audit/README.md" "$AUDIT_BRIEF:audit/briefs/agent-brief.md"; do
+  aud_f=${aud_pair%%:*}
+  aud_n=${aud_pair##*:}
+  if [ ! -f "$aud_f" ]; then
+    fail "${aud_n} 不存在 —— 审计层的 C 类口径无处安放"
+    continue
+  fi
+  if ! grep -q 'C 类' "$aud_f"; then
+    fail "${aud_n} 里推导不出「C 类」专用口径 —— 覆盖缺口会被差异门结构性挡下（G5 失守）"
+  elif ! grep -q 'design-purpose\.md' "$aud_f"; then
+    fail "${aud_n} 写了 C 类口径，但没把 expected 的来源指向目的层 design-purpose.md"
+  else
+    pass "${aud_n} 有 C 类专用口径，且 expected 的来源指向目的层"
+  fi
+done
+
+# ---------- ② claims 接线两侧附录 D ----------
+if [ ! -f "$CLAIMS" ]; then
+  fail "audit/templates/claims-checklist.tsv 不存在 —— E7 的接线没有落点"
+else
+  CS_D=$(count_rows_in_section "$MAIN"     '附录 D' '^[|] [0-9]+ [|]')
+  CPP_D=$(count_rows_in_section "$CPP_MAIN" '附录 D' '^[|] D[0-9]+ [|]')
+  CL_CS=$(awk -F'\t' 'NR > 1 && $3 ~ /csharp-coding-standards\.md 附录 D/ { n++ } END { print n + 0 }' "$CLAIMS")
+  CL_CPP=$(awk -F'\t' 'NR > 1 && $3 ~ /cpp-coding-standards\.md 附录 D/ { n++ } END { print n + 0 }' "$CLAIMS")
+  [ "$CS_D" = "$CL_CS" ] \
+    && pass "claims 接入 C# 附录 D 的条数与正文一致（${CS_D}）" \
+    || fail "claims 接入 C# 附录 D 的条数不一致：正文 ${CS_D} 条，claims 里 ${CL_CS} 条"
+  [ "$CPP_D" = "$CL_CPP" ] \
+    && pass "claims 接入 C++ 附录 D 的条数与正文一致（${CPP_D}）" \
+    || fail "claims 接入 C++ 附录 D 的条数不一致：正文 ${CPP_D} 条，claims 里 ${CL_CPP} 条"
+
+  # README 也把这两个数抄了一份 —— 跨文件核对，否则它就是下一个漂移点。
+  # （与第 9 节核对 README 的「已销 N 条」同一处理：同一事实写两处，就必须有人比对。）
+  CL_TOTAL=$(awk -F'\t' 'NR > 1 && NF > 1 { n++ } END { print n + 0 }' "$CLAIMS")
+  RM_CL_TOTAL=$(grep -oE '共 [0-9]+ 条断言' "$README" | grep -oE '[0-9]+' | head -1)
+  RM_CL_D=$(grep -oE '其中 \*\*[0-9]+ 条直接接在两侧正文附录 D 上' "$README" | grep -oE '[0-9]+' | head -1)
+  if [ -z "$RM_CL_TOTAL" ] || [ -z "$RM_CL_D" ]; then
+    warn "README 里推导不出 claims 的条数声明（共 N 条 / 其中 N 条接附录 D），无法比对"
+  else
+    [ "$RM_CL_TOTAL" = "$CL_TOTAL" ] \
+      && pass "README 声明的 claims 总数与实际一致（${CL_TOTAL}）" \
+      || fail "README 与 claims 的总数不一致：README=${RM_CL_TOTAL}，实际=${CL_TOTAL}"
+    [ "$RM_CL_D" = "$((CS_D + CPP_D))" ] \
+      && pass "README 声明的「接附录 D」条数与两侧之和一致（$((CS_D + CPP_D))）" \
+      || fail "README 与两侧附录 D 之和不一致：README=${RM_CL_D}，实际=$((CS_D + CPP_D))"
+  fi
+
+  # 每行字段数必须一致（8 列）—— 追加时若用了空格而非制表符，整份 TSV 会静默散架
+  CL_BADF=$(awk -F'\t' 'NR > 1 && NF > 1 && NF != 8 { print NR }' "$CLAIMS" | head -3 | tr '\n' ' ')
+  if [ -z "$CL_BADF" ]; then
+    pass "claims 每行字段数一致（8 列）"
+  else
+    fail "claims 有行的字段数不为 8（行号：${CL_BADF% }）—— 追加时误用了空格而非制表符"
+  fi
+
+  # 编号连续无断号（与 C++ 缺陷编号同一条纪律：漏改号或删条目必留坑）
+  read -r CL_N CL_MAX <<EOF
+$(awk -F'\t' 'NR > 1 && $1 ~ /^CLM-[0-9]+$/ { n = substr($1, 5) + 0; if (n > max) max = n; c++ } END { print c + 0, max + 0 }' "$CLAIMS")
+EOF
+  if [ -n "$CL_MAX" ] && [ "$CL_N" = "$CL_MAX" ]; then
+    pass "claims 编号连续（CLM-001…CLM-$(printf '%03d' "$CL_MAX")，无断号）"
+  else
+    fail "claims 编号不连续：最大编号 ${CL_MAX}，条目数 ${CL_N} —— 有断号或重复"
+  fi
+fi
+
+# ---------------------------------------------------------------------------
+hdr 24 "C++ 侧工具脚本的契约（退出码 / 参数 / 空范围必须非零）"
+# 起因（2026-09-29，E5）：C++ 侧此前**没有**安装与采基线脚本，全靠手抄接入计划 §4.2 的命令。
+# 而 §4.2 那几行里，一半的失效形态是「命令在跑、退出码也在变、实际一个文件都没查」
+# （空清单 / 缺工具 / 缺编译数据库）。所以这两个脚本的**契约**必须被机械核对，
+# 而不是"写完看一眼"——与 §18 对自检脚本本身做的是同一件事。
+B_SCRIPT="$SCRIPT_DIR/bootstrap_cpp_style.sh"
+L_SCRIPT="$SCRIPT_DIR/baseline_cpp_style.sh"
+
+# A. 存在性 + 语法
+for sf in "$B_SCRIPT" "$L_SCRIPT"; do
+  if [ ! -f "$sf" ]; then
+    fail "C++ 侧脚本缺失：$(basename "$sf") —— 手抄 §4.2 的命令会立刻复活"
+    continue
+  fi
+  if bash -n "$sf" 2>/dev/null; then
+    pass "C++ 侧脚本存在且语法通过：$(basename "$sf")"
+  else
+    fail "C++ 侧脚本语法错误：$(basename "$sf")"
+  fi
+done
+
+# B. 头部声明的退出码与实际必须互为子集（同 §18 A，口径一致）
+for sf in "$B_SCRIPT" "$L_SCRIPT"; do
+  [ -f "$sf" ] || continue
+  sbn=$(basename "$sf")
+  DECL=$(sed -n 's/^# 退出码:[^0-9]*//p' "$sf" | grep -oE '[0-9]+' | sort -u)
+  ACT=$(grep -oE '^[[:space:]]*exit[[:space:]]+[0-9]+' "$sf" | grep -oE '[0-9]+' | sort -u)
+  if [ -z "$DECL" ]; then
+    fail "${sbn} 头部找不到「# 退出码:」声明行 —— 契约无从核对"
+  else
+    MIS=""
+    for c in $DECL; do printf '%s\n' "$ACT" | grep -qx -- "$c" || MIS="${MIS}${c} "; done
+    if [ -z "$MIS" ]; then
+      pass "${sbn} 声明的退出码（$(printf '%s' "$DECL" | tr '\n' ' ' | sed 's/ $//')）都有对应 exit"
+    else
+      fail "${sbn} 声明了但脚本里不可能出现的退出码：${MIS}—— 调用方无法依赖"
+    fi
+    UND=""
+    for c in $ACT; do printf '%s\n' "$DECL" | grep -qx -- "$c" || UND="${UND}${c} "; done
+    if [ -n "$UND" ]; then
+      fail "${sbn} 有未在头部声明的退出码：${UND}—— 要么补进声明，要么删掉该 exit"
+    fi
+  fi
+done
+
+# C. 真功能：未知参数必须被拒（exit 2），不得静默退化成"看起来成功了"
+for sf in "$B_SCRIPT" "$L_SCRIPT"; do
+  [ -f "$sf" ] || continue
+  bash "$sf" "$SKILL_DIR" --__wcs_bogus_flag__ >/dev/null 2>&1
+  BOGUS_RC=$?
+  if [ "$BOGUS_RC" -eq 2 ]; then
+    pass "$(basename "$sf") 拒绝未知参数（exit 2）"
+  else
+    fail "$(basename "$sf") 未知参数返回 ${BOGUS_RC}（应为 2）—— 拼错的选项会静默退化"
+  fi
+done
+
+# D. **空范围必须非零退出** —— 这是防"假基线"的承重墙。
+#    接入计划 §4.2 的原话：「分母写 0 比不写分母更坏：它看起来是已核对过的」。
+#    这条刻意安排在**工具检测之前**（先判范围再判环境），所以在没装 clang 的机器上也成立。
+if [ -f "$L_SCRIPT" ]; then
+  EMPTY_DIR=$(mktemp -d 2>/dev/null || mktemp -d -t wcs)
+  if [ -n "$EMPTY_DIR" ] && [ -d "$EMPTY_DIR" ]; then
+    bash "$L_SCRIPT" "$EMPTY_DIR" >/dev/null 2>&1
+    EMPTY_RC=$?
+    if [ "$EMPTY_RC" -eq 4 ]; then
+      pass "baseline 脚本对**空范围**非零退出（exit 4）—— 不会把「没扫到」报成「0 违规」"
+    else
+      fail "baseline 脚本对空范围返回 ${EMPTY_RC}（应为 4）—— 空清单会被读成「干净」"
+    fi
+    rm -rf "$EMPTY_DIR"
+  else
+    warn "无法创建临时空目录，跳过「空范围必须非零」这条检查"
+  fi
+fi
+
+# E. 两个脚本必须列进 SKILL.md —— 交付了却不入口，等于没交付
+for sbn in bootstrap_cpp_style.sh baseline_cpp_style.sh; do
+  if grep -qF "$sbn" "$SKILL_MD"; then
+    pass "SKILL.md 已列出 ${sbn}"
+  else
+    fail "SKILL.md 未列出 ${sbn} —— C++ 侧脚本不入口，用户仍会手抄 §4.2"
+  fi
+done
 
 # ---------------------------------------------------------------------------
 printf '\n=== 结果：FAIL %d / WARN %d ===\n' "$FAIL" "$WARN"
