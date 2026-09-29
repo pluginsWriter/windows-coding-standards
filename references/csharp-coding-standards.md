@@ -1,6 +1,6 @@
 # C#/.NET 编码规范（Windows 平台）
 
-> 版本：v0.1.5（**体量上限表补「等级」列并声明本侧无配置载体** + 新增 `#33` + 新增「病灶索引」表）· 2026-09-28
+> 版本：v0.1.6（**E12 存量项落地**：`csharp_indent_switch_labels` 改 `true` + 行长 120 补指针句 + 接入整改流程落地为跨语言判据层）· 2026-09-29
 > 状态：正文、缺陷目录、配置模板（`assets/editorconfig` / `Directory.Build.props` / `stylecop.json`）与检查脚本均已建立。文中标 `[待实测]` 的条目是尚未在装有 .NET SDK 的机器上验证过的论断，附录 D 汇总了验证命令。
 >
 > **本文件只服务 C#/.NET。** C++ 侧见 `references/cpp-coding-standards.md`。
@@ -11,6 +11,7 @@
 > - `references/design-purpose.md` —— **跨语言**的目的层（「AI 编程」这个前提、五个目标与达成判据，§0 末引用它）
 > - `references/design-granularity.md` —— **跨语言**的粒度判据（臃肿 / 过度拆分，§5.3 引用它）
 > - `references/change-discipline.md` —— **跨语言**的变更纪律（整改不改行为 / 不为规范堆代码，§8 引用它）
+> - `references/remediation-playbook.md` —— **跨语言**的接入与整改流程（P0–P5 分层、A/B/C 定级与交付、交付四件；§8 引用它）
 > - `assets/editorconfig` / `Directory.Build.props` / `stylecop.json` —— 配置模板（取值的唯一权威）
 
 ---
@@ -204,10 +205,12 @@ csharp_preserve_single_line_statements = true
 
 - `indent_size = 4`、`indent_style = space`
 - `end_of_line`：**二选一且必须写进配置** —— 纯 Windows 工程用 `crlf`；含 macOS/Linux 协作或 CI 的工程用 `lf`。不要留空默认。
-- `csharp_indent_case_contents = true`、`csharp_indent_switch_labels = false`（`case` 与 `switch` 同级，**与 Swift 侧的 `indentSwitchCaseLabels = true` 相反，不要照搬**）
+- `csharp_indent_case_contents = true`、`csharp_indent_switch_labels = true`（`case` 相对 `switch` 缩进一级 —— **2026-09-29 用户裁决**，推翻此前的 `false`：它与 VS/Rider 默认相反，每次回车都被自动缩进改回，属与 Swift 侧「2 空格被推翻」同型的取值错位；本项现与编辑器默认一致，不再打架）
 - `csharp_using_directive_placement`：`System` 分组置顶（`dotnet_sort_system_directives_first = true`）
 
 ### 4.4 行长上限
+
+本侧行长上限为 120 列（**唯一权威：`assets/editorconfig` 的 `max_line_length`** —— 此处给出数值仅为可读性，改值只改模板，自检第 6 节核对两处一致）。
 
 `[待实测]` EditorConfig 的 `max_line_length` 主要被编辑器遵守，**Roslyn analyzers 是否在 `IDE0055` / 构建期强制行长，需实测确认**。若不强制，则本项为 SHOULD + 评审，且**必须如实标注**（Swift 侧的教训：文档写了一个工具不认的选项，照文档执行直接报错）。
 
@@ -397,6 +400,7 @@ Swift 版敢内置 S1–S6 快照，是因为这些来源可分发。C#/.NET 侧
 | v0.1.3 | 2026-09-28 | **规则未变**：① 新增跨语言配套文件引用 `change-discipline.md`，§8 迁移纪律由「只写流程」改为「流程 + 判据指针」，并补本侧三处最易踩的行为变更（`?.` 的 getter 调用次数、`.Result` → `await`、删空 `catch`）与「`!` 属 A 类不是行为变更」的区分；② 补「不得为消除分析器警告加代码」「禁止顺手清理」「交付三件东西」；③ 附录 A 补三条清单（`!` 的归类、文档注释的信息量、改动定级与净增行数） |
 | v0.1.4 | 2026-09-28 | **规则未变，只补动因**：接入跨语言目的层 `references/design-purpose.md`（头部配套文件清单与 §0 末各加指针），把「**AI 编程**」这个前提与五个目标（G1 业务 / G2 元规则 / G3 定位 / G4 硬约束 / G5 机制）的**达成判据**写进规范本体 —— 此前该前提在 `SKILL.md` 与两侧正文里**不可检索**，两侧 §0 写的是"人类团队的选择困难"，属次生原因。§0 新增一小节显式区分这两件事，并指明**目的层与缺陷目录不是同一张表**。本侧未复制目的层任何内容（判据只写一份）。 |
 | v0.1.5 | 2026-09-28 | **D-1 / D-2 两条裁决落地**：① §5.3 的体量上限表补「等级」列（四项一律 SHOULD）并**显式声明本侧没有配置载体** —— 按 §2 的元规则，它们只满足「有依据」不满足「可检查」，故不得标 MUST（此前只有"无内置规则"的说明，没说等级）。② §0 新增**病灶索引表**：六类 AI 病灶 × 机器能否拦住 × 本侧由哪一条对付它（G1 的机器可查那一半）。③ 新增 **`#33`「防御性检查泛滥」**（二档）：判据按**信任边界分层**，并给出本侧特有的四类"看着像防御、实际是重复"（开了可空性还对非空参数判空、记录主构造函数已校验又校验、`catch (Exception) { throw; }`、私有方法重复校验）。④ 自检第 20 节开始机械核对本侧病灶表。 |
+| v0.1.6 | 2026-09-29 | **阈值取值未变；E12 存量项经用户逐项裁决落地**：① `csharp_indent_switch_labels` **false → true** —— 旧取值与 VS/Rider 默认相反，回车自动缩进持续打架（与当年 Swift 侧「2 空格被推翻」同型的取值错位）。② §4.4 **补行长指针句**：上限 120 列，唯一权威 `assets/editorconfig` 的 `max_line_length`（消除「正文不给数值」的自检 WARN）。③ 接入与整改流程自接入计划落地为跨语言判据层 `references/remediation-playbook.md`（§8 已引用；自检第 15 节开始核对它被两侧共同使用）。 |
 
 ## 附录 D：待实测清单（在有 .NET SDK 的机器上逐条验证并把结论写回正文）
 

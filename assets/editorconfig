@@ -55,11 +55,10 @@ csharp_indent_case_contents = true
 csharp_indent_block_contents = true
 csharp_indent_braces = false
 csharp_indent_labels = one_less_than_current
-# case 标签与 switch 同级。注意这与 Swift 侧的 indentSwitchCaseLabels = true 取值相反，
-# 不要照搬（正文 §4.3）。⚠️ 但 VS / VS Code / Rider 的默认都是缩进一级（= true）——
-# 与编辑器默认相反会让「回车后的自动缩进」每次都与格式化结果打架，与 Swift 侧
-# 2 空格那次踩的是同一个坑。此处保留正文的既定取值，但**建议在真实工程上复核一次**。
-csharp_indent_switch_labels = false
+# case 标签相对 switch 缩进一级（= true）。2026-09-29 用户裁决：推翻此前与编辑器默认
+# 相反的 false —— VS / VS Code / Rider 的默认都是 true，「回车后的自动缩进」曾每次都与
+# 格式化结果打架，与 Swift 侧 2 空格那次踩的是同一个坑（正文 §4.3）。
+csharp_indent_switch_labels = true
 
 # ── using 组织（正文 §4.3）───────────────────────────────────────────────
 dotnet_sort_system_directives_first = true
