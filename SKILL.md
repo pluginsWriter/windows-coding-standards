@@ -242,7 +242,7 @@ bash "$SKILL_DIR"/scripts/verify_consistency.sh --strict # 任何 WARN 也算 FA
 
 **本版尚未在任何真实工程上完整跑过一遍。** 两侧状态不同，必须分开看：
 
-**C++ 侧：v0.1.7**（当前默认栈；本应记 v0.1.3，为与 C#/.NET 侧区分而跳号）
+**C++ 侧：v0.1.8**（当前默认栈；本应记 v0.1.3，为与 C#/.NET 侧区分而跳号）
 
 - **已实测**（Apple clang 21.0.0 + clang-format/clang-tidy **21.1.6**，逐条见 C++ 正文附录 D）：
   - 编译器警告类：`-Wnon-virtual-dtor` / `-Wold-style-cast` / `-Wshadow` / `-Wconversion` / `-Wextra-semi` 均生效；`-Wall -Wextra` **不含**它们；显式 C 风格转换**绕过** `-Wconversion`；非 const 全局与无作用域枚举**无警告**；`-Werror` 生效；`clang++ --analyze` 可用。
@@ -251,17 +251,19 @@ bash "$SKILL_DIR"/scripts/verify_consistency.sh --strict # 任何 WARN 也算 FA
 - **仍待实测**：D8（Doxygen `WARN_IF_UNDOCUMENTED` 可否作强制手段，本机无 doxygen）、D10（WHCP 是否仍要求汇总 Code Analysis / SDV 日志，属文档核对）。
 - ⚠️ **`clang-tidy` 的 PyPI 构建不含 `misra-*` 检查**（实测 `misra` 命中 0 条）⇒ §8 的 MISRA 合规**不能**靠它机械化。
 - **C++ 侧的来源快照可以做**（C++ Core Guidelines 是 MIT-style 许可），但**尚未做**。
+- **v0.1.8**（**E12 存量项落地**，阈值取值未变）：① **"达标"定为双口径分开报** —— 开发期与 CI 用 clang 口径（§5.1），交付物若为 MSVC 交付前另跑 `/W4 /analyze`，两套数字不互称达标。② **`SortIncludes: Never` 经裁决保留**（include 重排属 B 类，自动重排与「格式改动单独提交」纪律冲突）。③ 接入与整改流程落地为跨语言判据层 `references/remediation-playbook.md`，§9 已引用；随同新增 `assets/CODING_STYLE.md` 工程入口模板。C++ 来源快照经裁决**暂不做**。
 - **v0.1.7**（**E3 + E2**，规则与阈值均未变）：① 附录 D 的标题原先写「待实测清单」，而 11 条里 **9 条已销** ⇒ 标题与内容自相矛盾（G2 的最后一处失真）。改为「**验证状态与待实测清单**」，D 表拆成「**已销**（9 条，保留复验命令）/ **未销**（2 条，写明"缺什么才能销"）」两段。② 自检新增**第 22 节**：正文里每一处 `§X.Y` 都必须指得到真实标题（本侧扫过 56 处；缺了就在改名时静默指空）。
 - **v0.1.6**（**D-1 / D-2 落地**）：① **认知复杂度降为 SHOULD** 并标 `[待工程校准]` —— 实测它的阈值**就是 clang-tidy 的出厂默认值 `25`**，本工程从未选择过它，也没有任何标准规定它；§2 的元规则因此**补上第二个条件**（MUST 必须「可检查 **且** 有依据」）。② §5.4 表**不再写数值**（改为「等级 / 依据 / 由谁检查」），并补登 `BranchThreshold`；阈值副本在所有文档里一并改为指针。③ §0 新增**病灶索引表**（六类 AI 病灶 → 归属）。④ 新增 **`CPP-38`「防御性检查泛滥」**：判据按**信任边界分层**，且每处校验必须能说出"拦的是哪个来源的哪种失效"。⑤ 自检新增**第 20 / 21 节**。
 - v0.1.5：**规则与阈值均未变**，把跨语言目的层 `references/design-purpose.md` 接进本侧（§0 末尾加指针）——
   它显式写出「**AI 编程**」这个前提与五个目标的**达成判据**；此前该前提从未进入规范本体，两侧 §0 只写了"人类团队选不出来"。
 - v0.1.1 补的是变更纪律引用与 `#include` 重排开关的显式写死（那两项此前依赖预设默认，会随 clang-format 版本漂移）；v0.1.2 修 D11 的复验命令（原写法 `grep -E 'SortIncludes[|]IncludeBlocks'`（反例）把 ERE 的**字符类**当成了**交替**，永远零命中且 exit 1）。
 
-**C#/.NET 侧：v0.1.5**
+**C#/.NET 侧：v0.1.6**
 
 - 凡涉及**工具实际行为**的论断标 `[待实测]`，汇总在其正文附录 D（8 条）。销项需要一台装了 .NET SDK 的机器。
 - **本 skill 不内置 C# 侧官方来源快照**（版权原因：权威是书与 Learn 页面），因此不提供逐字引文校验。
 - v0.1.2 补隔离声明与粒度判据引用；v0.1.3 补变更纪律引用与提交前清单。**各版均未改规则。**
+- **v0.1.6**（**E12 存量项落地**，阈值取值未变）：① `csharp_indent_switch_labels` **false → true**（2026-09-29 用户裁决 —— 旧取值与 VS/Rider 默认相反，回车自动缩进持续打架，与当年 Swift 侧「2 空格被推翻」同型）。② §4.4 补**行长指针句**（上限 120 列，唯一权威 `assets/editorconfig`）。③ 接入与整改流程落地为跨语言判据层 `references/remediation-playbook.md`，§8 已引用。
 - **v0.1.5**（**D-1 / D-2 落地**）：① §5.3 的表补「等级」列（四项**一律 SHOULD**）并**显式声明本侧没有配置载体**。② §0 新增**病灶索引表**。③ 新增 **`#33`「防御性检查泛滥」**：判据按**信任边界分层**。④ 自检第 20 节开始机械核对本侧病灶表。
 - v0.1.4：**规则未变**，把跨语言目的层 `references/design-purpose.md` 接进本侧（§0 末尾加指针）。
 
@@ -281,6 +283,8 @@ bash "$SKILL_DIR"/scripts/verify_consistency.sh --strict # 任何 WARN 也算 FA
 - `references/design-purpose.md` —— **设计目的（跨语言）**：「AI 编程」这个前提、五个目标（G1 业务 / G2 元规则 / G3 定位 / G4 硬约束 / G5 机制）与**各自的达成判据**、总判据、本规范**不承诺**什么；**改规范本体之前先读**
 - `references/design-granularity.md` —— **设计粒度判据（跨语言）**：臃肿与过度拆分的双向判据、拆分的正当与禁止信号、类型级设计意图要求、碎片化候选筛选命令、评审清单
 - `references/change-discipline.md` —— **变更纪律判据（跨语言）**：**整改不得改变原有行为**（A/B/C 三级分类 + 两侧分侧陷阱表 + 证据阶梯）与**不得为满足规则增加代码**（唯一判据 + 常见违规清单 + 净增行数信号）；**接存量工程之前必读**
+- `references/remediation-playbook.md` —— **接入与整改流程（跨语言）**：P0 盘工具盘测试 → P1 只读基线 → P2 对照实验 → P3 分层整改（A/B/C 交付方式 + 禁止清单）→ P4 开闸 → P5 交付四件；侧特定命令分列，**不写任何阈值取值**（取值一律指向正文与 `assets/`）
+- `assets/CODING_STYLE.md` —— **工程级入口模板**（复制后填空）：本工程用哪一侧、追加的补充、例外登记、门禁命令骨架；**只放指针，不复制取值**
 - `assets/editorconfig` —— `.editorconfig` 模板。`[*]` 段**跨语言**；`[*.{cs,csx}]` 段仅 C#。**跨语言项（缩进 / 行尾 / charset）的唯一权威**
 - `assets/Directory.Build.props` —— **仅 C#/.NET**：`AnalysisLevel` / `EnforceCodeStyleInBuild` / `TreatWarningsAsErrors` / `Nullable`
 - `assets/stylecop.json` —— **仅 C#/.NET**：StyleCop 配置（仅在决定引入 StyleCop 时使用）
@@ -292,4 +296,4 @@ bash "$SKILL_DIR"/scripts/verify_consistency.sh --strict # 任何 WARN 也算 FA
 - `scripts/baseline_cpp_style.sh` —— **仅 C++**：违规基线采集（固化接入计划 §4.2：NUL 清单 + `[ -s ]` 守卫 + 数 NUL 字节得条数；**清单为空 / 缺工具 / 缺编译数据库一律非零退出**，绝不报「0 违规」）
 - `scripts/verify_consistency.sh` —— skill 内部一致性自检（双侧）
 
-**尚未建立**（不要凭空引用，也不要拿别的文件顶替）：C++ 整改手册、C++ 侧来源快照与引文校验、`CODING_STYLE.md` 工程模板。
+**尚未建立**（不要凭空引用，也不要拿别的文件顶替）：C++ 侧来源快照与引文校验（**2026-09-29 裁决：暂不做** —— 无立即消费方，且快照有上游漂移成本；许可允许，将来要做须单独裁决）。~~C++ 整改手册~~（已落地为 `references/remediation-playbook.md`）、~~`CODING_STYLE.md` 工程模板~~（已落地为 `assets/CODING_STYLE.md`）。

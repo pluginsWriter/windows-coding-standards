@@ -1,6 +1,6 @@
 # C++ 缺陷目录与检测方法
 
-> 版本：v0.1.7（**本侧内容未变**，与 `cpp-coding-standards.md` 同步版本号 —— 该侧改了附录 D 的标题与分段）· 2026-09-28 · 配套 `cpp-coding-standards.md`
+> 版本：v0.1.8（**本侧内容未变**，与 `cpp-coding-standards.md` 同步版本号 —— 该侧落了 E12 存量项：达标双口径 / `SortIncludes` 裁决 / 整改流程判据层）· 2026-09-29 · 配套 `cpp-coding-standards.md`
 > **本文件只服务 C++。** C#/.NET 侧见 `csharp-defect-catalog.md`。
 > **编号体系为 `CPP-xx`，与 C# 侧的 `#xx` 不通用** —— 两侧条目**不得互相引用、不得交叉套用**（见「与 C#/.NET 侧的隔离」）。
 

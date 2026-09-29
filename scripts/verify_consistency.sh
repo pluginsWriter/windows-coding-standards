@@ -77,7 +77,11 @@ CHANGE_DISC="$SKILL_DIR/references/change-discipline.md"
 # 它不在 SHARED_JUDGMENT 里的话，第 15 节不会核对"两侧是否都还在用它"，
 # 于是它可以被某一侧静默弃用而没人发现（与本文件存在的理由同源）。
 DESIGN_PURPOSE="$SKILL_DIR/references/design-purpose.md"
-SHARED_JUDGMENT="$DESIGN_PURPOSE $GRANULARITY $CHANGE_DISC"
+# 接入与整改流程（2026-09-29 E12 落地为判据层）：进 SHARED_JUDGMENT 后，
+# 第 15 节同样核对「SKILL.md 列出 + 两侧正文共同引用 + 自带版本行」——
+# 不进去的话它可以被某一侧静默弃用而没人发现（与目的层同源的理由）。
+PLAYBOOK="$SKILL_DIR/references/remediation-playbook.md"
+SHARED_JUDGMENT="$DESIGN_PURPOSE $GRANULARITY $CHANGE_DISC $PLAYBOOK"
 
 FAIL=0
 WARN=0
