@@ -1340,9 +1340,12 @@ hdr 24 "C++ 侧工具脚本的契约（退出码 / 参数 / 空范围必须非�
 # 而不是"写完看一眼"——与 §18 对自检脚本本身做的是同一件事。
 B_SCRIPT="$SCRIPT_DIR/bootstrap_cpp_style.sh"
 L_SCRIPT="$SCRIPT_DIR/baseline_cpp_style.sh"
+# 2026-10-12 起：一键编排层（薄壳）也是契约成员 —— 它交付了却不入口、退出码不可依赖，
+# 用户照样会退回手抄命令（与 E5 当年同样的理由）。
+O_SCRIPT="$SCRIPT_DIR/onboard_cpp_style.sh"
 
 # A. 存在性 + 语法
-for sf in "$B_SCRIPT" "$L_SCRIPT"; do
+for sf in "$B_SCRIPT" "$L_SCRIPT" "$O_SCRIPT"; do
   if [ ! -f "$sf" ]; then
     fail "C++ 侧脚本缺失：$(basename "$sf") —— 手抄 §4.2 的命令会立刻复活"
     continue
@@ -1355,7 +1358,7 @@ for sf in "$B_SCRIPT" "$L_SCRIPT"; do
 done
 
 # B. 头部声明的退出码与实际必须互为子集（同 §18 A，口径一致）
-for sf in "$B_SCRIPT" "$L_SCRIPT"; do
+for sf in "$B_SCRIPT" "$L_SCRIPT" "$O_SCRIPT"; do
   [ -f "$sf" ] || continue
   sbn=$(basename "$sf")
   DECL=$(sed -n 's/^# 退出码:[^0-9]*//p' "$sf" | grep -oE '[0-9]+' | sort -u)
@@ -1379,7 +1382,7 @@ for sf in "$B_SCRIPT" "$L_SCRIPT"; do
 done
 
 # C. 真功能：未知参数必须被拒（exit 2），不得静默退化成"看起来成功了"
-for sf in "$B_SCRIPT" "$L_SCRIPT"; do
+for sf in "$B_SCRIPT" "$L_SCRIPT" "$O_SCRIPT"; do
   [ -f "$sf" ] || continue
   bash "$sf" "$SKILL_DIR" --__wcs_bogus_flag__ >/dev/null 2>&1
   BOGUS_RC=$?
@@ -1409,14 +1412,47 @@ if [ -f "$L_SCRIPT" ]; then
   fi
 fi
 
-# E. 两个脚本必须列进 SKILL.md —— 交付了却不入口，等于没交付
-for sbn in bootstrap_cpp_style.sh baseline_cpp_style.sh; do
+# E. 三个脚本必须列进 SKILL.md —— 交付了却不入口，等于没交付
+for sbn in bootstrap_cpp_style.sh baseline_cpp_style.sh onboard_cpp_style.sh; do
   if grep -qF "$sbn" "$SKILL_MD"; then
     pass "SKILL.md 已列出 ${sbn}"
   else
-    fail "SKILL.md 未列出 ${sbn} —— C++ 侧脚本不入口，用户仍会手抄 §4.2"
+    fail "SKILL.md 未列出 ${sbn} —— C++ 侧脚本不入口，用户仍会手抄命令"
   fi
 done
+
+# ---------------------------------------------------------------------------
+hdr 25 "一键编排层的专属契约（--update 不得静默覆盖；空目录必须非零）"
+# 起因（2026-10-12）：onboard_cpp_style.sh 落地（方案 C，plancheck evaluationId 11d73413）。
+# 它的段间失败传播、退出码、未知参数已并入 §24 的三脚本循环；本节只守它**独有**的两条。
+if [ ! -f "$O_SCRIPT" ]; then
+  fail "onboard_cpp_style.sh 缺失 —— §24 的三脚本循环会先报，这里不重复"
+else
+  # A. --update 的安全三件套必须都在脚本里（静态守卫，防将来改丢）：
+  #    ① 时间戳备份 ② cmp 副作用核验 ③ dump-config 复验。缺任何一件，--update 就是裸覆盖。
+  for token in 'date +%Y%m%d' 'cmp -s' 'dump-config'; do
+    if grep -qF -- "$token" "$O_SCRIPT"; then
+      pass "--update 安全件在位：${token}"
+    else
+      fail "onboard 脚本里找不到 ${token} —— --update 退化为裸覆盖 / 不复验"
+    fi
+  done
+  # B. 空目录必须非零（经步骤 1 的 bootstrap：无工具环境 exit 3，有工具环境 exit 4 ——
+  #    两种都合法，所以只断言「非零」，不锚死具体码）。
+  EMPTY_DIR=$(mktemp -d 2>/dev/null || mktemp -d -t wcs)
+  if [ -n "$EMPTY_DIR" ] && [ -d "$EMPTY_DIR" ]; then
+    bash "$O_SCRIPT" "$EMPTY_DIR" >/dev/null 2>&1
+    O_EMPTY_RC=$?
+    if [ "$O_EMPTY_RC" -ne 0 ]; then
+      pass "onboard 对**空范围**非零退出（exit ${O_EMPTY_RC}，3=无工具 / 4=无源文件）—— 不会把「没接入」报成「成功」"
+    else
+      fail "onboard 对空目录返回 0 —— 空工程被读成「接入完成」"
+    fi
+    rm -rf "$EMPTY_DIR"
+  else
+    warn "无法创建临时空目录，跳过 onboard 的「空范围必须非零」检查"
+  fi
+fi
 
 # ---------------------------------------------------------------------------
 printf '\n=== 结果：FAIL %d / WARN %d ===\n' "$FAIL" "$WARN"

@@ -80,6 +80,12 @@ CONFIDENCE=high | low
 ```sh
 PROJECT=/path/to/your/cpp-project
 
+# 一键接入（推荐）：check → fix → 探针 → 编译数据库 → 基线，任一段失败即停
+# 配置升级后重新替换：加 --update（时间戳备份 → 替换 → 复验）
+bash "$SKILL_DIR"/scripts/onboard_cpp_style.sh "$PROJECT"
+
+# 分步（一键链内部的各段，也是单独重跑某一段时的入口）：
+
 # 只读：检测 clang-format / clang-tidy、检查配置是否齐全（不写任何文件）
 bash "$SKILL_DIR"/scripts/bootstrap_cpp_style.sh "$PROJECT" --check
 
@@ -174,7 +180,7 @@ dotnet build -warnaserror            # 语义与文档注释
 
 - **C#/.NET 侧：v0.1.6** —— 该侧凡涉及**工具实际行为**的论断都标了 `[待实测]`，汇总在其正文附录 D（8 条），销项需要一台装了 .NET SDK 的机器。
   - ⚠️ **v0.1.6（E12 存量项落地）**：`csharp_indent_switch_labels` **false → true**（用户裁决 —— 旧取值与 VS/Rider 默认相反，回车自动缩进持续打架）；§4.4 补**行长指针句**（上限 120 列，唯一权威 `assets/editorconfig`，消除自检 WARN）；接入整改流程落地为跨语言判据层 [`remediation-playbook.md`](references/remediation-playbook.md)。
-- **C++ 侧：v0.1.8** —— **编译器警告类与格式化器 / `clang-tidy` 行为类均已实测**（Apple clang 21.0.0 + clang-format/clang-tidy **21.1.6**），逐条结论写在其正文附录 D；11 条待实测**已销 9 条**，只剩 D8（需 Doxygen）与 D10（需查 WDK 文档）。（版本号本应记 v0.1.3，为与 C#/.NET 侧区分而跳号。）
+- **C++ 侧：v0.1.9** —— **编译器警告类与格式化器 / `clang-tidy` 行为类均已实测**（Apple clang 21.0.0 + clang-format/clang-tidy **21.1.6**），逐条结论写在其正文附录 D；11 条待实测**已销 9 条**，只剩 D8（需 Doxygen）与 D10（需查 WDK 文档）。（版本号本应记 v0.1.3，为与 C#/.NET 侧区分而跳号。v0.1.9 新增一键编排层 `scripts/onboard_cpp_style.sh` 与 `--update` 重新替换入口，规则与阈值未变。）
 > ⚠️ **v0.1.8（E12 存量项落地，阈值取值未变）**：① **"达标"定为双口径分开报** —— 开发期与 CI 用 clang 口径（§5.1），交付物若为 MSVC 交付前另跑 `/W4 /analyze`，两套数字不互称达标；② **`SortIncludes: Never` 经裁决保留**（自动重排与「格式改动单独提交」纪律冲突）；③ 接入整改流程落地为跨语言判据层 [`remediation-playbook.md`](references/remediation-playbook.md)，随同新增 [`assets/CODING_STYLE.md`](assets/CODING_STYLE.md) 工程入口模板；C++ 来源快照经裁决**暂不做**。
   - ⚠️ **v0.1.7（E3 + E2，规则与阈值均未变）**：附录 D 原来叫「**待实测清单**」，而表里 11 条已有 9 条销项 —— **标题与内容自相矛盾**。改为「**验证状态与待实测清单**」并按**已销 / 未销**分段，段标题自带条数（由自检第 9 节核对，正文别处不另抄一份）。同时自检新增**第 22 节**：正文里每一处 `§X.Y` 必须指得到真实标题，否则锚点改名时会**静默指空**。
   - ⚠️ **v0.1.6（D-1 / D-2 落地）**：**认知复杂度降为 SHOULD** 并标 `[待工程校准]` —— 实测它的阈值**就是 `clang-tidy` 的出厂默认值**，本工程从未选择过它，也没有任何标准规定它。⇒ 元规则随之补上**第二个条件**：MUST 必须「可检查 **且** 有依据」，缺任一项降 SHOULD。另外新增 `CPP-38` / `#33`（防御性检查按信任边界分层）与**两侧 §0 的病灶索引表**，并把散在正文 / 判据层 / 摘要里的**阈值副本一律改为指针**（取值只写在 `assets/clang-tidy`）。
