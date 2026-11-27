@@ -109,8 +109,10 @@ fi
 # ---------- CLM-006: MSVC /analyze 无复杂度/嵌套对等诊断 ----------
 if have cl; then
   ( cd "$LOGD" && cl ${SL}nologo ${SL}c ${SL}analyze ${SL}W4 "$FIX/cognitive_complexity.cpp" > clm006.log 2>&1 )
-  if grep -qiE 'complexit|nesting' "$LOGD/clm006.log"; then
-    rec CLM-006 FAIL "$LOGD/clm006.log" "/analyze 报出了复杂度/嵌套类诊断 —— 与声明不符"
+  # 只匹配 MSVC 诊断行；'complexit|nesting' 会被夹具文件名回显骗过 → 假 FAIL（findings-master F-006）
+  # 注意用 [[:space:]] 而非 \s：BSD/GNU grep -E 均不支持 \s（见计划 §4.6 教训）
+  if grep -qE ':[[:space:]]*(warning|error)[[:space:]]+C[0-9]' "$LOGD/clm006.log"; then
+    rec CLM-006 FAIL "$LOGD/clm006.log" "/analyze 报出了诊断行 —— 与声明不符"
   else
     rec CLM-006 PASS "$LOGD/clm006.log" "/analyze 无复杂度/嵌套对等诊断（与声明一致；证据为无匹配，属排除性证据）"
   fi

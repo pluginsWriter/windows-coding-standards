@@ -137,8 +137,10 @@ if (Have 'cl') {
 if (Have 'cl') {
     $log = Join-Path $LogDir 'clm006.log'
     LogOf 'cl' @('/nologo', '/c', '/analyze', '/W4', (Join-Path $Fix 'cognitive_complexity.cpp')) $log $LogDir
-    if (Select-String -Path $log -Pattern 'complexit|nesting' -Quiet) {
-        Rec 'CLM-006' 'FAIL' $log "/analyze 报出了复杂度/嵌套类诊断 —— 与声明不符"
+    # 只匹配 MSVC 诊断行（file(l): warning Cxxxx / error Cxxxx）。
+    # 旧模式 'complexit|nesting' 会被夹具文件名回显 cognitive_complexity.cpp 骗过 → 假 FAIL（findings-master F-006）
+    if (Select-String -Path $log -Pattern ':\s*(warning|error)\s+C\d' -Quiet) {
+        Rec 'CLM-006' 'FAIL' $log "/analyze 报出了诊断行 —— 与声明不符"
     } else {
         Rec 'CLM-006' 'PASS' $log "/analyze 无复杂度/嵌套对等诊断（与声明一致；证据为无匹配，属排除性证据）"
     }

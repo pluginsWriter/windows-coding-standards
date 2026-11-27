@@ -55,11 +55,11 @@ AI 的边际成本为零，所以它倾向于：
 |---|---|---|
 | 圈复杂度 / 认知复杂度 | `.clang-tidy` 的 `readability-function-cognitive-complexity.Threshold`（**等级 SHOULD**，理由见 C++ 正文 §5.4） | `CA1502`（内置；阈值配置键名 `[待实测]`） |
 | 函数行数 | `readability-function-size.LineThreshold` | 无内置规则 → SHOULD + 人工 |
-| 类型行数 | 无工具 → SHOULD + 人工 | 无内置规则 → SHOULD + 人工 |
+| 类型行数 | 无内置检查器 → SHOULD + 人工（与 C++ 文件行数分开审查） | 无内置规则 → SHOULD + 人工 |
 | 参数个数 | `readability-function-size.ParameterThreshold` | `CA1026` 相关 / 人工 |
 | 嵌套深度 | `readability-function-size.NestingThreshold` | 无内置规则 → 人工 |
 
-> **有配置载体的取值（C++ 侧这五项）只写一份** —— 权威是 `assets/clang-tidy`，本文件与两侧正文都**不复制数值**。
+> **有配置载体的 C++ 函数/复杂度检查项取值只写一份** —— 权威是 `assets/clang-tidy`，本文件与两侧正文都**不复制其数值**。C++ 文件体量预警另见 C++ 正文 §5.4；它不是类型行数限制，也不是 clang-tidy 检查项。
 > **没有载体的取值（C# 侧四项：圈复杂度 / 函数行数 / 类型行数 / 参数个数）以 C# 正文 §5.3 为唯一出处**，本文件同样不复制。
 > 上表只是"哪一项由谁检查"的索引。
 

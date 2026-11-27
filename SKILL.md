@@ -244,13 +244,14 @@ bash "$SKILL_DIR"/scripts/verify_consistency.sh --strict # 任何 WARN 也算 FA
   另外每处改动都要能挂上一个缺陷编号或规则条目 —— 挂不上的，说明那处改动本来就不该做。**只做了格式就等于没做完。**
 - **禁止「顺手清理」**（死代码、未使用参数、"多余"的防御性检查、注释掉的旧代码）—— 那属于改变行为，须单独提交。
 - 超过体量上限的类型**不要机械切割** —— 先过 `design-granularity.md` §3.2 的提问清单。
+- **C++ 大类/大文件且要求功能不变**：执行 `references/cpp-large-class-refactoring.md` 的方法/状态/调用方/改后归属映射、文件拆分与职责拆解区分、双向粒度判定、C++ 方法契约审查及 Windows 前后验证；文件体量预警口径见 C++ 正文 §5.4。没有目标构建和表征测试时，只交付设计与待办，不宣称行为等价；C# 仍按本侧判据，不套用 C++ 流程。
 - 大范围整改前留**回滚点**（干净分支或 tag）；单个提交要小到能被评审。
 
 ## 本版的状态声明
 
 **本版尚未在任何真实工程上完整跑过一遍。** 两侧状态不同，必须分开看：
 
-**C++ 侧：v0.1.9**（当前默认栈；本应记 v0.1.3，为与 C#/.NET 侧区分而跳号）
+**C++ 侧：v0.1.10**（当前默认栈；本应记 v0.1.3，为与 C#/.NET 侧区分而跳号）
 
 - **已实测**（Apple clang 21.0.0 + clang-format/clang-tidy **21.1.6**，逐条见 C++ 正文附录 D）：
   - 编译器警告类：`-Wnon-virtual-dtor` / `-Wold-style-cast` / `-Wshadow` / `-Wconversion` / `-Wextra-semi` 均生效；`-Wall -Wextra` **不含**它们；显式 C 风格转换**绕过** `-Wconversion`；非 const 全局与无作用域枚举**无警告**；`-Werror` 生效；`clang++ --analyze` 可用。
@@ -259,6 +260,7 @@ bash "$SKILL_DIR"/scripts/verify_consistency.sh --strict # 任何 WARN 也算 FA
 - **仍待实测**：D8（Doxygen `WARN_IF_UNDOCUMENTED` 可否作强制手段，本机无 doxygen）、D10（WHCP 是否仍要求汇总 Code Analysis / SDV 日志，属文档核对）。
 - ⚠️ **`clang-tidy` 的 PyPI 构建不含 `misra-*` 检查**（实测 `misra` 命中 0 条）⇒ §8 的 MISRA 合规**不能**靠它机械化。
 - **C++ 侧的来源快照可以做**（C++ Core Guidelines 是 MIT-style 许可），但**尚未做**。
+- **v0.1.10**（**C++ 大类拆解与文件预警试行**）：文件体量按 C++ 正文 §5.4 预警并人工评审；职责映射、双向粒度和逐簇行为/ABI 对照见 `cpp-large-class-refactoring.md`；Doxygen 注释按声明、实现、调用方核对语义。未完成真实 Windows 大类拆解演练。
 - **v0.1.9**（**一键编排层落地**，规则与阈值均未变）：新增 `scripts/onboard_cpp_style.sh` —— C++ 侧一键接入的**薄编排层**（check → fix → 探针 → 编译数据库 → 基线，逐段调用既有脚本，不实现第二份逻辑）；`--update` 补上配置升级后「重新替换」的官方入口（时间戳备份 → 替换 → `cmp` 副作用核验 → `dump-config` 复验，此前只能手工 cp）。`bootstrap --probe` 的 `[未报]` 行自此成为对调用方的**输出契约**（probe 段按检测+报告语义恒 exit 0，编排层据此判失败）。自检新增**第 25 节**（三脚本契约 + `--update` 安全三件套 + 空目录非零）。CMake 工程自动生成编译数据库；MSVC / `.sln` 工程只打印断链提示（路线仍为「暂不定」）。**尚未在 Windows（Git Bash）实跑**，已列入验证工单。
 - **v0.1.8**（**E12 存量项落地**，阈值取值未变）：① **"达标"定为双口径分开报** —— 开发期与 CI 用 clang 口径（§5.1），交付物若为 MSVC 交付前另跑 `/W4 /analyze`，两套数字不互称达标。② **`SortIncludes: Never` 经裁决保留**（include 重排属 B 类，自动重排与「格式改动单独提交」纪律冲突）。③ 接入与整改流程落地为跨语言判据层 `references/remediation-playbook.md`，§9 已引用；随同新增 `assets/CODING_STYLE.md` 工程入口模板。C++ 来源快照经裁决**暂不做**。
 - **v0.1.7**（**E3 + E2**，规则与阈值均未变）：① 附录 D 的标题原先写「待实测清单」，而 11 条里 **9 条已销** ⇒ 标题与内容自相矛盾（G2 的最后一处失真）。改为「**验证状态与待实测清单**」，D 表拆成「**已销**（9 条，保留复验命令）/ **未销**（2 条，写明"缺什么才能销"）」两段。② 自检新增**第 22 节**：正文里每一处 `§X.Y` 都必须指得到真实标题（本侧扫过 56 处；缺了就在改名时静默指空）。
@@ -290,6 +292,7 @@ bash "$SKILL_DIR"/scripts/verify_consistency.sh --strict # 任何 WARN 也算 FA
 - `references/cpp-defect-catalog.md` —— **C++ 缺陷目录**：38 类（20 / 11 / 7），编号 `CPP-01`–`CPP-38`
 - `references/cpp-naming-antipatterns.md` —— **C++ 命名反模式词典**：§0 可接受词表（**唯一权威**）/ A–I 九类必改反模式 / 快速替换表 / 七条自检测试
 - `references/design-purpose.md` —— **设计目的（跨语言）**：「AI 编程」这个前提、五个目标（G1 业务 / G2 元规则 / G3 定位 / G4 硬约束 / G5 机制）与**各自的达成判据**、总判据、本规范**不承诺**什么；**改规范本体之前先读**
+- `references/cpp-large-class-refactoring.md` —— **仅 C++ 大类拆解操作指引**：方法/状态/依赖盘点、文件与类型拆分的区分、方法契约、前后行为/ABI 验证与未验证声明
 - `references/design-granularity.md` —— **设计粒度判据（跨语言）**：臃肿与过度拆分的双向判据、拆分的正当与禁止信号、类型级设计意图要求、碎片化候选筛选命令、评审清单
 - `references/change-discipline.md` —— **变更纪律判据（跨语言）**：**整改不得改变原有行为**（A/B/C 三级分类 + 两侧分侧陷阱表 + 证据阶梯）与**不得为满足规则增加代码**（唯一判据 + 常见违规清单 + 净增行数信号）；**接存量工程之前必读**
 - `references/remediation-playbook.md` —— **接入与整改流程（跨语言）**：P0 盘工具盘测试 → P1 只读基线 → P2 对照实验 → P3 分层整改（A/B/C 交付方式 + 禁止清单）→ P4 开闸 → P5 交付四件；侧特定命令分列，**不写任何阈值取值**（取值一律指向正文与 `assets/`）

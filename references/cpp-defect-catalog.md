@@ -1,6 +1,6 @@
 # C++ 缺陷目录与检测方法
 
-> 版本：v0.1.9（**本侧内容未变**，与 `cpp-coding-standards.md` 同步版本号 —— 该侧落了 E12 存量项：达标双口径 / `SortIncludes` 裁决 / 整改流程判据层）· 2026-09-29 · 配套 `cpp-coding-standards.md`
+> 版本：v0.1.10（文件体量预警与类型职责审查分离；拆解判据见 `cpp-large-class-refactoring.md`）· 2026-10-13 · 配套 `cpp-coding-standards.md`
 > **本文件只服务 C++。** C#/.NET 侧见 `csharp-defect-catalog.md`。
 > **编号体系为 `CPP-xx`，与 C# 侧的 `#xx` 不通用** —— 两侧条目**不得互相引用、不得交叉套用**（见「与 C#/.NET 侧的隔离」）。
 
@@ -69,7 +69,7 @@
 | CPP-27 | 头文件里的 `using namespace` | `grep -rn 'using namespace' --include='*.h'` | 移入 `.cpp`，或改用限定名 | 头文件顶部 `using namespace std;` |
 | CPP-28 | 缺失 include guard | `grep -L '#pragma once' $(git ls-files '*.h')` | 统一加 `#pragma once` **或**传统 guard（全工程一种） | 新头文件两种都没有 |
 | CPP-29 | 宏用于本可用函数/常量表达的场景 | `grep -rnE '^\s*#define\s+[A-Za-z_]+\('` | 改 `constexpr` / `inline` 函数 | `#define MAX(a,b) ((a)>(b)?(a):(b))` |
-| CPP-30 | 类型行数 / 单文件类型数 | 无专用工具，脚本统计行数与类型声明数 | 按 CPP-33 判断是否该拆 | 800 行的类定义 |
+| CPP-30 | 文件体量 / 类型职责边界 | 文件行数按正文 §5.4 筛候选；类型成员、状态与变化原因靠人工核对 | 按 CPP-33、CPP-34 和大类拆解指引判断，绝不为压行数机械拆 | 大文件不一定是大类；类分散在多个文件仍可能臃肿 |
 | CPP-38 | **防御性检查泛滥**（**不在信任边界上的**那一类） | 见下方候选命令；无专门规则 | **按信任边界分层**：跨边界的**必须留**；边界之内的重复校验删掉，删不掉说明契约缺失 → 按 CPP-33 补契约 | 内层函数对已被外层校验过的指针再判一次 `ptr != nullptr` |
 
 > **本档的存在本身就是一条结论**：这些条目**没有默认开启的检查器**。要用它们，必须自己把阈值写进 `.clang-tidy` 的 `CheckOptions`，或自建脚本 —— 只说「我们查过了」不成立。
